@@ -5,7 +5,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.ai.control.FlyingMoveControl;
 import net.minecraft.world.entity.ai.control.MoveControl;
@@ -146,7 +145,9 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 	 * in {@link SmoothFlightMoveControl} covers the rest.
 	 */
 	public void flyDirectlyTowards(LivingEntity target) {
-		this.getNavigation().stop();
+		if (!this.getNavigation().isDone()) {
+			this.getNavigation().stop();
+		}
 		Vec3 aim = target.position().add(0.0D, 1.5D, 0.0D);
 		Vec3 dir = aim.subtract(this.position()).normalize();
 		Vec3 velocity = this.getDeltaMovement().scale(PURSUIT_DRAG).add(dir.scale(PURSUIT_ACCEL));
@@ -204,8 +205,9 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 	}
 
 	/**
-	 * Flight control with believable physics: hovers in place, ramps climbs
-	 * instead of rocketing upward, and hops low obstacles on contact.
+	 * Flight control with believable physics: hovers in place, hops low
+	 * obstacles on contact, and always caps the climb rate LAST so no
+	 * combination of pushes can stack into a runaway ascent.
 	 */
 	static class SmoothFlightMoveControl extends FlyingMoveControl {
 		SmoothFlightMoveControl(Mob mob) {
@@ -215,12 +217,12 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 		@Override
 		public void tick() {
 			super.tick();
+			if (this.mob.horizontalCollision) {
+				this.mob.setDeltaMovement(this.mob.getDeltaMovement().add(0.0D, OBSTACLE_HOP_BOOST, 0.0D));
+			}
 			Vec3 delta = this.mob.getDeltaMovement();
 			if (delta.y > MAX_CLIMB_SPEED) {
 				this.mob.setDeltaMovement(delta.x, MAX_CLIMB_SPEED, delta.z);
-			}
-			if (this.mob.horizontalCollision && this.operation == Operation.MOVE_TO) {
-				this.mob.setDeltaMovement(this.mob.getDeltaMovement().add(0.0D, OBSTACLE_HOP_BOOST, 0.0D));
 			}
 		}
 	}
