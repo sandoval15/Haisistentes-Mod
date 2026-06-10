@@ -69,10 +69,11 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 	public static final double DIRECT_PURSUIT_DISTANCE = 8.0D;
 	/** Pursuit cruise speed in blocks/tick (~14 m/s, ~2.5x player sprint). */
 	private static final double PURSUIT_SPEED = 0.7D;
-	/** Velocity decay per tick during pursuit; with the matching acceleration
-	 *  below it converges on PURSUIT_SPEED. */
+	/** Velocity decay per tick during pursuit; together with the
+	 *  per-tick acceleration it converges on the cruise speed. */
 	private static final double PURSUIT_DRAG = 0.9D;
-	private static final double PURSUIT_ACCEL = PURSUIT_SPEED * (1.0D - PURSUIT_DRAG) / PURSUIT_DRAG;
+	/** In combat, dive directly at the target while outside melee reach. */
+	private static final double COMBAT_PURSUIT_MIN_DISTANCE = 2.5D;
 
 	private GroundPathNavigation groundNav;
 	private FlyingPathNavigation airNav;
@@ -145,17 +146,26 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 	}
 
 	/**
-	 * Direct flight: steers velocity straight at the target, ignoring path
-	 * nodes. Aims slightly above it so terrain clips less; the collision hop
-	 * in {@link SmoothFlightMoveControl} covers the rest.
+	 * Direct flight: steers velocity straight at the aim point, ignoring path
+	 * nodes. Cruise speed scales down with proximity so it converges on the
+	 * target instead of overshooting and orbiting it. The collision hop in
+	 * {@link SmoothFlightMoveControl} covers terrain clips.
+	 *
+	 * @param aimHeight offset above the target's feet: high for travel so
+	 *                  terrain clips less, low for closing into melee reach
 	 */
-	public void flyDirectlyTowards(LivingEntity target) {
+	public void flyDirectlyTowards(LivingEntity target, double aimHeight) {
 		if (!this.getNavigation().isDone()) {
 			this.getNavigation().stop();
 		}
-		Vec3 aim = target.position().add(0.0D, 1.5D, 0.0D);
-		Vec3 dir = aim.subtract(this.position()).normalize();
-		Vec3 velocity = this.getDeltaMovement().scale(PURSUIT_DRAG).add(dir.scale(PURSUIT_ACCEL));
+		Vec3 toAim = target.position().add(0.0D, aimHeight, 0.0D).subtract(this.position());
+		double distance = toAim.length();
+		if (distance < 0.05D) {
+			return;
+		}
+		double cruise = Math.min(PURSUIT_SPEED, distance * 0.25D);
+		double accel = cruise * (1.0D - PURSUIT_DRAG) / PURSUIT_DRAG;
+		Vec3 velocity = this.getDeltaMovement().scale(PURSUIT_DRAG).add(toAim.normalize().scale(accel));
 		this.setDeltaMovement(velocity);
 
 		float yaw = (float) (Mth.atan2(velocity.z, velocity.x) * (180F / (float) Math.PI)) - 90.0F;
@@ -195,9 +205,10 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 	public void aiStep() {
 		super.aiStep();
 		updateCombatFlight();
-		// Glide: slow descents so it lands gently instead of dropping
+		// Glide on idle descents only, so landings are gentle. Never while
+		// navigating or fighting: dives must stay fast.
 		Vec3 delta = this.getDeltaMovement();
-		if (!this.onGround() && delta.y < 0.0D) {
+		if (!this.onGround() && delta.y < 0.0D && this.getTarget() == null && this.getNavigation().isDone()) {
 			this.setDeltaMovement(delta.multiply(1.0D, 0.6D, 1.0D));
 		}
 	}
@@ -228,11 +239,18 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 		this.combatStuckTicks = (dx * dx + dz * dz < 0.01D) ? this.combatStuckTicks + 1 : 0;
 		this.lastCombatPos = this.position();
 
-		boolean fly = this.shouldFly(target, this.distanceTo(target), false, this.combatStuckTicks)
+		double distance = this.distanceTo(target);
+		boolean fly = this.shouldFly(target, distance, false, this.combatStuckTicks)
 				|| this.combatStuckTicks > COMBAT_STUCK_TICKS_FOR_FLIGHT;
 		if (fly != this.isFlightMode()) {
 			this.setFlightMode(fly);
 			this.combatFlight = fly;
+		}
+
+		// Airborne chase: dive straight at the target (path nodes orbit
+		// around small fast flyers like bats); melee lands on contact
+		if (fly && distance > COMBAT_PURSUIT_MIN_DISTANCE) {
+			this.flyDirectlyTowards(target, 0.25D);
 		}
 	}
 

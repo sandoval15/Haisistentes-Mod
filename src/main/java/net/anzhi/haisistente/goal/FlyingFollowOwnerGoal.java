@@ -127,7 +127,7 @@ public class FlyingFollowOwnerGoal extends Goal {
 				tryToTeleportNearEntity();
 				return;
 			}
-			this.mob.flyDirectlyTowards(this.owner);
+			this.mob.flyDirectlyTowards(this.owner, 1.5D);
 			this.recalcCooldown = 0;
 			return;
 		}
