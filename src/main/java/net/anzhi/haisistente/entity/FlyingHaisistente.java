@@ -50,6 +50,8 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 	public static final double VERTICAL_GAP_FOR_FLIGHT = 4.0D;
 	/** Ticks without progress on foot before resorting to flight. */
 	public static final int WALK_STUCK_TICKS_FOR_FLIGHT = 40;
+	/** In combat, take off sooner when ground pathing stalls. */
+	public static final int COMBAT_STUCK_TICKS_FOR_FLIGHT = 20;
 
 	/** Climb rate cap so takeoffs ramp up instead of launching. */
 	private static final double MAX_CLIMB_SPEED = 0.3D;
@@ -75,6 +77,9 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 	private GroundPathNavigation groundNav;
 	private FlyingPathNavigation airNav;
 	private boolean flightMode;
+	private boolean combatFlight;
+	private int combatStuckTicks;
+	private Vec3 lastCombatPos = Vec3.ZERO;
 
 	public FlyingHaisistente(EntityType<? extends HaisistenteAbstract> type, Level world) {
 		super(type, world);
@@ -189,10 +194,45 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 	@Override
 	public void aiStep() {
 		super.aiStep();
+		updateCombatFlight();
 		// Glide: slow descents so it lands gently instead of dropping
 		Vec3 delta = this.getDeltaMovement();
 		if (!this.onGround() && delta.y < 0.0D) {
 			this.setDeltaMovement(delta.multiply(1.0D, 0.6D, 1.0D));
+		}
+	}
+
+	/**
+	 * Combat goals move the mob but never pick a movement mode, so a ground
+	 * path to an unreachable target leaves it hopping at an edge. While a
+	 * target exists, decide walk-vs-fly here; land again once combat ends.
+	 * Stuck detection is horizontal-only: jumping in place must still count
+	 * as no progress.
+	 */
+	private void updateCombatFlight() {
+		if (this.level().isClientSide()) {
+			return;
+		}
+		LivingEntity target = this.getTarget();
+		if (target == null || !target.isAlive()) {
+			if (this.combatFlight) {
+				this.combatFlight = false;
+				this.setFlightMode(false);
+			}
+			this.combatStuckTicks = 0;
+			return;
+		}
+
+		double dx = this.getX() - this.lastCombatPos.x;
+		double dz = this.getZ() - this.lastCombatPos.z;
+		this.combatStuckTicks = (dx * dx + dz * dz < 0.01D) ? this.combatStuckTicks + 1 : 0;
+		this.lastCombatPos = this.position();
+
+		boolean fly = this.shouldFly(target, this.distanceTo(target), false, this.combatStuckTicks)
+				|| this.combatStuckTicks > COMBAT_STUCK_TICKS_FOR_FLIGHT;
+		if (fly != this.isFlightMode()) {
+			this.setFlightMode(fly);
+			this.combatFlight = fly;
 		}
 	}
 

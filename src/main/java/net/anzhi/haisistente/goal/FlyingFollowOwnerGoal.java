@@ -142,11 +142,10 @@ public class FlyingFollowOwnerGoal extends Goal {
 	}
 
 	private void trackStuckness() {
-		if (this.mob.position().distanceToSqr(this.lastPos) < 0.01D) {
-			this.stuckTicks++;
-		} else {
-			this.stuckTicks = 0;
-		}
+		// Horizontal-only: jumping in place must still count as no progress
+		double dx = this.mob.getX() - this.lastPos.x;
+		double dz = this.mob.getZ() - this.lastPos.z;
+		this.stuckTicks = (dx * dx + dz * dz < 0.01D) ? this.stuckTicks + 1 : 0;
 		this.lastPos = this.mob.position();
 	}
 
