@@ -13,6 +13,7 @@ import net.anzhi.haisistente.entity.HaisistenteAbstract;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.anzhi.haisistente.client.overlay.EntityOverlayGeoLayer;
 import net.anzhi.haisistente.entity.layer.EatGeoRendererLayer;
 import net.anzhi.haisistente.init.LayerFactory;
 
@@ -27,6 +28,8 @@ public class HaisistenteRenderer extends GeoEntityRenderer<HaisistenteAbstract> 
                 this.addRenderLayer(f.create(this));
             }
         }
+        // Last so overlays draw on top of the outfit/item layers (see docs/entity-overlays.md)
+        this.addRenderLayer(new EntityOverlayGeoLayer<>(this));
         this.shadowRadius = 0.5f;
     }
 
