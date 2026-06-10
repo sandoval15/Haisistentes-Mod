@@ -1,7 +1,7 @@
-package net.mcreator.haisistente.init;
+package net.anzhi.haisistente.init;
 
-import net.mcreator.haisistente.HaisistenteMod;
-import net.mcreator.haisistente.init.HaisistenteEntities;
+import net.anzhi.haisistente.HaisistenteMod;
+import net.anzhi.haisistente.init.HaisistenteEntities;
 import net.minecraftforge.registries.RegistryObject;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.DeferredRegister;
@@ -10,8 +10,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.BlockItem;
 
-import net.mcreator.haisistente.item.BambooDorado;
+import net.anzhi.haisistente.item.GoldenBambooItem;
 
 public class HaisistenteItems {
 	public static final DeferredRegister<Item> REGISTRY = DeferredRegister.create(ForgeRegistries.ITEMS, HaisistenteMod.MODID);
@@ -75,6 +76,7 @@ public class HaisistenteItems {
     			return Component.literal("Haisistente Jenn Spawn Egg");
 			}
 		});
-	public static final RegistryObject<Item> BAMBOO_DORADO = REGISTRY.register("golden_bamboo", () -> new BambooDorado());
+	public static final RegistryObject<Item> GOLDEN_BAMBOO = REGISTRY.register("golden_bamboo", () -> new GoldenBambooItem());
+	public static final RegistryObject<Item> PLUSH_HAISE = REGISTRY.register("peluchehaise", () -> new BlockItem(HaisistenteBlocks.PLUSH_HAISE.get(), new Item.Properties()));
 }
 
