@@ -101,10 +101,15 @@ public class FlyingFollowOwnerGoal extends Goal {
 
 	@Override
 	public void stop() {
+		LivingEntity lastOwner = this.owner;
 		this.owner = null;
 		this.mob.getNavigation().stop();
 		this.mob.setPathfindingMalus(BlockPathTypes.WATER, this.oldWaterCost);
-		this.mob.setFlightMode(false);
+		// Land only if the owner is grounded; if they are hovering mid-air,
+		// stay airborne next to them instead of dropping out of the sky
+		if (lastOwner == null || lastOwner.onGround()) {
+			this.mob.setFlightMode(false);
+		}
 	}
 
 	@Override
@@ -117,7 +122,7 @@ public class FlyingFollowOwnerGoal extends Goal {
 		double dist = this.mob.distanceTo(this.owner);
 		trackStuckness();
 
-		boolean ownerIsFast = this.owner.isSprinting() || this.owner.isFallFlying() || this.owner.getVehicle() != null;
+		boolean ownerIsFast = this.owner.isSprinting() || this.owner.isFallFlying() || this.owner.getVehicle() != null || !this.owner.onGround();
 		boolean bigVerticalGap = Math.abs(this.owner.getY() - this.mob.getY()) > VERTICAL_GAP_FOR_FLIGHT;
 
 		boolean fly;
@@ -138,7 +143,7 @@ public class FlyingFollowOwnerGoal extends Goal {
 			double speed;
 			if (fly) {
 				// Fast flight; even faster when left well behind
-				speed = dist > 10.0D ? this.baseSpeed * 1.8D : this.baseSpeed * 1.4D;
+				speed = dist > 10.0D ? this.baseSpeed * 2.2D : this.baseSpeed * 1.6D;
 			} else {
 				speed = dist > 10.0D ? this.baseSpeed * 1.2D : this.baseSpeed;
 			}

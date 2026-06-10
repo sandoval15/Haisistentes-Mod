@@ -49,7 +49,7 @@ public class HaisistenteLilac extends FlyingHaisistente {
 		builder = builder.add(Attributes.ARMOR, 0.0D);
 		builder = builder.add(Attributes.ATTACK_DAMAGE, 5.5D);
 		builder = builder.add(Attributes.FOLLOW_RANGE, 16.0D);
-		builder = builder.add(Attributes.FLYING_SPEED,0.6);
+		builder = builder.add(Attributes.FLYING_SPEED, 1.0);
 		return builder;
 	}
 

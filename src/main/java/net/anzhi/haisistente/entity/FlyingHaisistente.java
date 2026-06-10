@@ -68,7 +68,7 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 				this.airNav.setCanFloat(true);
 				this.airNav.setCanPassDoors(true);
 			}
-			this.moveControl = new FlyingMoveControl(this, 10, false);
+			this.moveControl = new FlyingMoveControl(this, 10, true);
 			this.navigation = this.airNav;
 		} else {
 			this.setNoGravity(false);
