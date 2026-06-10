@@ -27,10 +27,6 @@ public class HaisistenteFlou extends FlyingHaisistente {
 		super(type, world);
 	}
 
-	public boolean initFlying() {
-		return false;
-	}
-
 	@Override
 	public String getTexture() {
 		return "flou_texture";

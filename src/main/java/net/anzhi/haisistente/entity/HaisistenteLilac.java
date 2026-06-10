@@ -27,10 +27,6 @@ public class HaisistenteLilac extends FlyingHaisistente {
 		super(type, world);
 	}
 
-	public boolean initFlying() {
-		return false;
-	}
-
 	@Override
 	public String getTexture() {
 		return "lilac_texture";
