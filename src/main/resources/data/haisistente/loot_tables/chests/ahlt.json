@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "haisistente:bamboo_dorado",
+          "name": "haisistente:golden_bamboo",
           "weight": 1,
           "functions": [
             {

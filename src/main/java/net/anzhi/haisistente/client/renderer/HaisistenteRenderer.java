@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.client.renderer;
+package net.anzhi.haisistente.client.renderer;
 
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
@@ -8,13 +8,13 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.MultiBufferSource;
 
-import net.mcreator.haisistente.entity.model.HaisistenteModel;
-import net.mcreator.haisistente.entity.HaisistenteAbstract;
+import net.anzhi.haisistente.entity.model.HaisistenteModel;
+import net.anzhi.haisistente.entity.HaisistenteAbstract;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.mcreator.haisistente.entity.layer.EatGeoRendererLayer;
-import net.mcreator.haisistente.init.LayerFactory;
+import net.anzhi.haisistente.entity.layer.EatGeoRendererLayer;
+import net.anzhi.haisistente.init.LayerFactory;
 
 import java.util.List;
 

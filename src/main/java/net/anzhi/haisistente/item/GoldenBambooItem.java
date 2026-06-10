@@ -1,13 +1,13 @@
-package  net.mcreator.haisistente.item;
+package  net.anzhi.haisistente.item;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
-public class BambooDorado extends Item {
+public class GoldenBambooItem extends Item {
 
-    public BambooDorado() {
+    public GoldenBambooItem() {
         super(new Item.Properties()
                 .stacksTo(64)
                 .rarity(Rarity.RARE)

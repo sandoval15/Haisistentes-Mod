@@ -1,1 +1,15 @@
-{}
+{
+  "itemgroup.haisistente": "Haisistente",
+  "entity.haisistente.haisistente": "Haisistente",
+  "entity.haisistente.haisistente_zombie": "Haisistente Zombie",
+  "entity.haisistente.haisistente_lux": "Haisistente Lux",
+  "entity.haisistente.haisistente_flou": "Haisistente Flou",
+  "entity.haisistente.haisistente_lilac": "Haisistente Lilac",
+  "entity.haisistente.haisistente_another": "Haisistente Another",
+  "entity.haisistente.haisistente_pixel": "Haisistente Pixel",
+  "entity.haisistente.haisistente_isabella": "Haisistente Isabella",
+  "entity.haisistente.haisistente_tate": "Haisistente Tate",
+  "entity.haisistente.haisistente_jenn": "Haisistente Jenn",
+  "block.haisistente.peluchehaise": "Peluche Haise",
+  "container.haisistente.lux_menu": "Lux Inventory"
+}

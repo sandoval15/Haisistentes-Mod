@@ -1,5 +1,5 @@
-package net.mcreator.haisistente.entity.flag;
+package net.anzhi.haisistente.entity.flag;
 
-import net.mcreator.haisistente.entity.flag.FrameFlag;
+import net.anzhi.haisistente.entity.flag.FrameFlag;
 
 public record FrameFlagPacket(int entityId, FrameFlag flag) {}

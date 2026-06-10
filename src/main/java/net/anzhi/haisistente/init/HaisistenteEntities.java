@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.init;
+package net.anzhi.haisistente.init;
 
 import net.minecraftforge.registries.RegistryObject;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -12,17 +12,17 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Entity;
 
-import net.mcreator.haisistente.entity.Haisistente;
-import net.mcreator.haisistente.entity.HaisistenteZombie;
-import net.mcreator.haisistente.entity.HaisistenteLux;
-import net.mcreator.haisistente.entity.HaisistenteFlou;
-import net.mcreator.haisistente.entity.HaisistenteLilac;
-import net.mcreator.haisistente.entity.HaisistenteAnother;
-import net.mcreator.haisistente.entity.HaisistentePixel;
-import net.mcreator.haisistente.entity.HaisistenteIsabella;
-import net.mcreator.haisistente.entity.HaisistenteTate;
-import net.mcreator.haisistente.entity.HaisistenteJenn;
-import net.mcreator.haisistente.HaisistenteMod;
+import net.anzhi.haisistente.entity.Haisistente;
+import net.anzhi.haisistente.entity.HaisistenteZombie;
+import net.anzhi.haisistente.entity.HaisistenteLux;
+import net.anzhi.haisistente.entity.HaisistenteFlou;
+import net.anzhi.haisistente.entity.HaisistenteLilac;
+import net.anzhi.haisistente.entity.HaisistenteAnother;
+import net.anzhi.haisistente.entity.HaisistentePixel;
+import net.anzhi.haisistente.entity.HaisistenteIsabella;
+import net.anzhi.haisistente.entity.HaisistenteTate;
+import net.anzhi.haisistente.entity.HaisistenteJenn;
+import net.anzhi.haisistente.HaisistenteMod;
 
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class HaisistenteEntities {

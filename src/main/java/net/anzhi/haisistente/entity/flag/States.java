@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity.flag;
+package net.anzhi.haisistente.entity.flag;
 
 public enum States {
 	NONE,

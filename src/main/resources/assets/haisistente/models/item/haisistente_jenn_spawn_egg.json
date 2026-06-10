@@ -1,6 +1,6 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "haisistente:item/huevo_haisistente_jenn"
+    "layer0": "haisistente:item/haisistente_jenn_spawn_egg"
   }
 }

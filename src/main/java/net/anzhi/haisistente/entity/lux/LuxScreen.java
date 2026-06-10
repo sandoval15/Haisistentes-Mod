@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity.lux;
+package net.anzhi.haisistente.entity.lux;
 
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
@@ -29,7 +29,7 @@ public class LuxScreen extends AbstractContainerScreen<LuxMenu> {
 		this.imageHeight = 176;
 	}
 
-	private static final ResourceLocation texture = new ResourceLocation("haisistente:textures/screens/favio_inventory.png");
+	private static final ResourceLocation texture = new ResourceLocation("haisistente:textures/screens/lux_inventory.png");
 
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {

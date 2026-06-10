@@ -1,7 +1,7 @@
-package net.mcreator.haisistente;
+package net.anzhi.haisistente;
 
-import net.mcreator.haisistente.entity.flag.FrameFlagPacket;
-import net.mcreator.haisistente.init.*;
+import net.anzhi.haisistente.entity.flag.FrameFlagPacket;
+import net.anzhi.haisistente.init.*;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -21,8 +21,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.FriendlyByteBuf;
 
-import net.mcreator.haisistente.entity.HaisistenteAbstract;
-import net.mcreator.haisistente.entity.flag.FrameFlag;
+import net.anzhi.haisistente.entity.HaisistenteAbstract;
+import net.anzhi.haisistente.entity.flag.FrameFlag;
 
 import java.util.function.Supplier;
 import java.util.function.Function;
@@ -39,13 +39,11 @@ public class HaisistenteMod {
 	public static final String MODID = "haisistente";
 
 	public HaisistenteMod() {
-		// Start of user code block mod constructor
-		// End of user code block mod constructor
 		MinecraftForge.EVENT_BUS.register(this);
 		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
-		// Start of user code block mod init
 		HaisistenteCreativeTab.TABS.register(bus);
 		HaisistenteEntities.REGISTRY.register(bus);
+		HaisistenteBlocks.REGISTRY.register(bus);
 		HaisistenteItems.REGISTRY.register(bus);
 		HaisistenteMenus.REGISTRY.register(bus);
 		HaisistenteMod.addNetworkMessage(FrameFlagPacket.class,
@@ -58,10 +56,8 @@ public class HaisistenteMod {
 				buffer -> new FrameFlagPacket(buffer.readInt(), buffer.readEnum(FrameFlag.class)),
 				// HANDLE (SERVER)
 				(packet, contextSupplier) -> {
-					//System.out.println("SERVER: packet received flag=" + packet.flag());
 					NetworkEvent.Context context = contextSupplier.get();
 					context.enqueueWork(() -> {
-						//System.out.println("SERVER: handling FrameFlagPacket");
 						ServerPlayer sender = context.getSender();
 						if (sender == null)
 							return;
@@ -72,11 +68,8 @@ public class HaisistenteMod {
 					});
 					context.setPacketHandled(true);
 				});
-		// End of user code block mod init
 	}
 
-	// Start of user code block mod methods
-	// End of user code block mod methods
 	private static final String PROTOCOL_VERSION = "1";
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;

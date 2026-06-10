@@ -12,7 +12,7 @@
 			},
 			"bones": [
 				{
-					"name": "gorro_favio",
+					"name": "favio_hat",
 					"pivot": [0, 20, 0.5],
 					"cubes": [
 						{
@@ -87,7 +87,7 @@
 				},
 				{
 					"name": "ala1",
-					"parent": "gorro_favio",
+					"parent": "favio_hat",
 					"pivot": [-5.3, 19.6, 1],
 					"cubes": [
 						{
@@ -129,7 +129,7 @@
 				},
 				{
 					"name": "ala2",
-					"parent": "gorro_favio",
+					"parent": "favio_hat",
 					"pivot": [5.3, 19.6, 1],
 					"cubes": [
 						{

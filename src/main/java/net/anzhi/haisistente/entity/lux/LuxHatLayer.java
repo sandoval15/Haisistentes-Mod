@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity.lux;
+package net.anzhi.haisistente.entity.lux;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -22,8 +22,8 @@ import software.bernie.geckolib.core.animation.AnimatableManager;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import software.bernie.geckolib.model.GeoModel;
 
-import net.mcreator.haisistente.entity.HaisistenteLux;
-import net.mcreator.haisistente.entity.HaisistenteAbstract;
+import net.anzhi.haisistente.entity.HaisistenteLux;
+import net.anzhi.haisistente.entity.HaisistenteAbstract;
 
 public class LuxHatLayer extends GeoRenderLayer<HaisistenteAbstract> {
 

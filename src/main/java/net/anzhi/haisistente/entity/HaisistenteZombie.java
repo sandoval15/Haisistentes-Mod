@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity;
+package net.anzhi.haisistente.entity;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -22,11 +22,11 @@ import net.minecraft.world.entity.ai.goal.PanicGoal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.effect.MobEffects;
 
-import net.mcreator.haisistente.init.HaisistenteEntities;
+import net.anzhi.haisistente.init.HaisistenteEntities;
 
 public class HaisistenteZombie extends HaisistenteAbstract {
 	private static final EntityDataAccessor<Boolean> CONVERTING = SynchedEntityData.defineId(HaisistenteAbstract.class, EntityDataSerializers.BOOLEAN);
-	private int ConversionTime;
+	private int conversionTime;
 
 	public HaisistenteZombie(PlayMessages.SpawnEntity packet, Level world) {
 		this(HaisistenteEntities.HAISISTENTE_ZOMBIE.get(), world);
@@ -44,17 +44,17 @@ public class HaisistenteZombie extends HaisistenteAbstract {
 
 	@Override
 	public String getTexture() {
-		return "haisezombie_texture";
+		return "zombie_texture";
 	}
 	
 	@Override
 	public String getModel() {
-		return "geo/ropa_zombie.geo.json";
+		return "geo/outfit_zombie.geo.json";
 	}
 	
 	@Override
 	public String getGeoAnimation() {
-		return "animations/ropa_zombie.animation.json";
+		return "animations/outfit_zombie.animation.json";
 	}
 
 	@Override
@@ -127,9 +127,9 @@ public class HaisistenteZombie extends HaisistenteAbstract {
 
 	public void tick() {
 		if (!this.level().isClientSide && this.isAlive() && this.isConverting()) {
-			this.ConversionTime -= 1;
-			if (this.ConversionTime <= 0 && ForgeEventFactory.canLivingConvert(this, HaisistenteEntities.HAISISTENTE.get(), (timer) -> {
-				this.ConversionTime = timer;
+			this.conversionTime -= 1;
+			if (this.conversionTime <= 0 && ForgeEventFactory.canLivingConvert(this, HaisistenteEntities.HAISISTENTE.get(), (timer) -> {
+				this.conversionTime = timer;
 			})) {
 				this.finishConversion((ServerLevel)this.level());
 			}
@@ -141,7 +141,7 @@ public class HaisistenteZombie extends HaisistenteAbstract {
    @Override
    public void addAdditionalSaveData(CompoundTag tag) {
 		super.addAdditionalSaveData(tag);
-		tag.putInt("conversiontime", this.isConverting() ? this.ConversionTime : -1);
+		tag.putInt("conversiontime", this.isConverting() ? this.conversionTime : -1);
 	}
 
 	@Override
@@ -153,7 +153,7 @@ public class HaisistenteZombie extends HaisistenteAbstract {
 	}
 
 	private void startConverting(int time) {
-		this.ConversionTime = time;
+		this.conversionTime = time;
 		this.getEntityData().set(CONVERTING, true);
 		this.removeEffect(MobEffects.WEAKNESS);
 		this.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, time, Math.min(this.level().getDifficulty().getId() - 1, 0)));

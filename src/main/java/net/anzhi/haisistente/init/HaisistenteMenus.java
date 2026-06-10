@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.init;
+package net.anzhi.haisistente.init;
 
 import net.minecraftforge.registries.RegistryObject;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -7,8 +7,8 @@ import net.minecraftforge.common.extensions.IForgeMenuType;
 
 import net.minecraft.world.inventory.MenuType;
 
-import net.mcreator.haisistente.entity.lux.LuxMenu;
-import net.mcreator.haisistente.HaisistenteMod;
+import net.anzhi.haisistente.entity.lux.LuxMenu;
+import net.anzhi.haisistente.HaisistenteMod;
 
 
 public class HaisistenteMenus {

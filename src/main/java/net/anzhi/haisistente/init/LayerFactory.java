@@ -1,9 +1,9 @@
 
-package net.mcreator.haisistente.init;
+package net.anzhi.haisistente.init;
 
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
-import net.mcreator.haisistente.entity.HaisistenteAbstract;
+import net.anzhi.haisistente.entity.HaisistenteAbstract;
 
 @FunctionalInterface
 public interface LayerFactory<T extends HaisistenteAbstract> {
