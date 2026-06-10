@@ -3,16 +3,15 @@ plugins {
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
 }
 
-version = '1.0'
-group = 'com.yourname.modid'
-archivesBaseName = 'modid'
+version = '1.0.0'
+group = 'net.anzhi.haisistente'
+archivesBaseName = 'haisistente'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 minecraft {
     mappings channel: 'official', version: '1.20.1'
 
-    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
     copyIdeResources = true
 
     runs {
@@ -27,7 +26,7 @@ minecraft {
                     "${projectDir}/build/createSrgToMcp/output.srg"
 
             mods {
-                examplemod {
+                haisistente {
                     source sourceSets.main
                 }
             }
@@ -44,7 +43,7 @@ minecraft {
                     "${projectDir}/build/createSrgToMcp/output.srg"
 
             mods {
-                examplemod {
+                haisistente {
                     source sourceSets.main
                 }
             }
@@ -57,7 +56,13 @@ minecraft {
             property 'mixin.env.refMapRemappingFile',
                     "${projectDir}/build/createSrgToMcp/output.srg"
 
-            args '--mod', 'modid', '--all', '--output', file('src/generated/resources/')
+            args '--mod', 'haisistente', '--all', '--output', file('src/generated/resources/')
+
+            mods {
+                haisistente {
+                    source sourceSets.main
+                }
+            }
         }
     }
 }
