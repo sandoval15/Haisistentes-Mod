@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity;
+package net.anzhi.haisistente.entity;
 
 import net.minecraftforge.network.PlayMessages;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -29,12 +29,12 @@ import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.network.NetworkHooks;
 
-import net.mcreator.haisistente.init.HaisistenteEntities;
+import net.anzhi.haisistente.init.HaisistenteEntities;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 
-import net.mcreator.haisistente.entity.lux.LuxMenu;
-import net.mcreator.haisistente.entity.lux.LuxHatAnimatable;
+import net.anzhi.haisistente.entity.lux.LuxMenu;
+import net.anzhi.haisistente.entity.lux.LuxHatAnimatable;
 
 public class HaisistenteLux extends FlyingHaisistente {
 	
@@ -54,17 +54,17 @@ public class HaisistenteLux extends FlyingHaisistente {
 
 	@Override
 	public String getTexture() {
-		return "textura_favio";
+		return "favio_texture";
 	}
 	
 	@Override
 	public String getModel() {
-		return "geo/ropa_favio.geo.json";
+		return "geo/outfit_favio.geo.json";
 	}
 	
 	@Override
 	public String getGeoAnimation() {
-		return "animations/ropa_favio.animation.json";
+		return "animations/outfit_favio.animation.json";
 	}
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -79,7 +79,7 @@ public class HaisistenteLux extends FlyingHaisistente {
 		return builder;
 	}
 
-	public void MostrarGUI(Player player) {
+	public void openInventoryGui(Player player) {
     	if (!(player instanceof ServerPlayer serverPlayer)) return;
 
     	this.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(handler -> {
@@ -89,7 +89,7 @@ public class HaisistenteLux extends FlyingHaisistente {
 
                 	@Override
                 	public Component getDisplayName() {
-                    	return Component.literal("Lux Inventory");
+                    	return Component.translatable("container.haisistente.lux_menu");
                 	}
 
                 	@Override
@@ -102,9 +102,9 @@ public class HaisistenteLux extends FlyingHaisistente {
 	}
 
 	@Override
-	public InteractionResult CustomInteract(Player sourceentity, InteractionHand hand) {
-		if (!level().isClientSide && sourceentity.isShiftKeyDown() && isOwnedBy(sourceentity)) {
-			MostrarGUI(sourceentity);
+	public InteractionResult customInteract(Player player, InteractionHand hand) {
+		if (!level().isClientSide && player.isShiftKeyDown() && isOwnedBy(player)) {
+			openInventoryGui(player);
 			return InteractionResult.SUCCESS;
 		}
 		return null;

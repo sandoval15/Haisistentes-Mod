@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.procedures;
+package net.anzhi.haisistente.procedures;
 
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -16,15 +16,15 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.AABB;
 
-import net.mcreator.haisistente.entity.HaisistenteAbstract;
-import net.mcreator.haisistente.entity.flag.States;
+import net.anzhi.haisistente.entity.HaisistenteAbstract;
+import net.anzhi.haisistente.entity.flag.States;
 
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Random;
 
 @Mod.EventBusSubscriber
-public class ClickTocaDiscosProcedure {
+public class JukeboxDanceHandler {
 
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
@@ -66,7 +66,7 @@ public class ClickTocaDiscosProcedure {
         for (HaisistenteAbstract hs : haisistentes) {
         	Random random = new Random();
             hs.jukebox = jukebox;
-            hs.typedance = random.nextInt(hs.maxdances) + 1;
+            hs.danceType = random.nextInt(hs.maxDances) + 1;
             hs.setDancing();
         }
     }

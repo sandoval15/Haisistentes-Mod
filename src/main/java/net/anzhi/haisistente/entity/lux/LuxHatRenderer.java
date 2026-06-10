@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity.lux;
+package net.anzhi.haisistente.entity.lux;
 
 import software.bernie.geckolib.renderer.GeoObjectRenderer;
 

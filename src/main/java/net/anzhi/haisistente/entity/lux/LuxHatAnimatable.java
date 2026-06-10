@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity.lux;
+package net.anzhi.haisistente.entity.lux;
 
 import software.bernie.geckolib.core.animatable.GeoAnimatable;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
@@ -11,7 +11,7 @@ import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 import software.bernie.geckolib.util.RenderUtils;
 
-import net.mcreator.haisistente.entity.HaisistenteLux;
+import net.anzhi.haisistente.entity.HaisistenteLux;
 
 public class LuxHatAnimatable implements GeoAnimatable {
 

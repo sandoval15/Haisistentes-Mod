@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity;
+package net.anzhi.haisistente.entity;
 
 import net.minecraftforge.network.PlayMessages;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -13,7 +13,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 
-import net.mcreator.haisistente.init.HaisistenteEntities;
+import net.anzhi.haisistente.init.HaisistenteEntities;
 
 public class HaisistenteIsabella extends HaisistenteAbstract {
 
@@ -27,17 +27,17 @@ public class HaisistenteIsabella extends HaisistenteAbstract {
 
 	@Override
 	public String getTexture() {
-		return "isabella_textures";
+		return "isabella_texture";
 	}
 	
 	@Override
 	public String getModel() {
-		return "geo/ropa_isabella.geo.json";
+		return "geo/outfit_isabella.geo.json";
 	}
 	
 	@Override
 	public String getGeoAnimation() {
-		return "animations/ropa_isabella.animation.json";
+		return "animations/outfit_isabella.animation.json";
 	}
 	
 	@Override

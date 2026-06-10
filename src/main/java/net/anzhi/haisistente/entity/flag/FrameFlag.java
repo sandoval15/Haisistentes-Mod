@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity.flag;
+package net.anzhi.haisistente.entity.flag;
 
 public enum FrameFlag {
     FRAME_HIT,

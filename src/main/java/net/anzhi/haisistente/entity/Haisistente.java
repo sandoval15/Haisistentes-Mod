@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity;
+package net.anzhi.haisistente.entity;
 
 import net.minecraftforge.network.PlayMessages;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -13,7 +13,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 
-import net.mcreator.haisistente.init.HaisistenteEntities;
+import net.anzhi.haisistente.init.HaisistenteEntities;
 
 public class Haisistente extends HaisistenteAbstract {
 
@@ -32,12 +32,12 @@ public class Haisistente extends HaisistenteAbstract {
 	
 	@Override
 	public String getModel() {
-		return isTame() ? "geo/ropa_haisen.geo.json" : "geo/ropa_desnudo.geo.json";
+		return isTame() ? "geo/outfit_haisen.geo.json" : "geo/outfit_base.geo.json";
 	}
 	
 	@Override
 	public String getGeoAnimation() {
-		return isTame() ? "animations/ropa_haisen.animation.json" : "animations/ropa_desnudo.animation.json";
+		return isTame() ? "animations/outfit_haisen.animation.json" : "animations/outfit_base.animation.json";
 	}
 	
 	@Override

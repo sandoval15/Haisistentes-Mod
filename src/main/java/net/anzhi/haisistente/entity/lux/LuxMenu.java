@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity.lux;
+﻿package net.anzhi.haisistente.entity.lux;
 
 import net.minecraftforge.items.SlotItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
@@ -15,7 +15,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.inventory.MenuType;
-import net.mcreator.haisistente.init.HaisistenteMenus;
+import net.anzhi.haisistente.init.HaisistenteMenus;
 
 import java.util.function.Supplier;
 import java.util.Map;
@@ -34,12 +34,12 @@ public class LuxMenu extends AbstractContainerMenu implements Supplier<Map<Integ
 	private Entity boundEntity = null;
 
 	public String sound;
-	public int InvStart;
+	public int invStart;
 
-	private static final int numslots = 18;
+	private static final int NUM_SLOTS = 18;
 
 	{
-		InvStart = 94;
+		invStart = 94;
 		sound = "item.armor.equip_leather";
 	}
 
@@ -52,33 +52,33 @@ public class LuxMenu extends AbstractContainerMenu implements Supplier<Map<Integ
     	this.internal = handler;
     	this.bound = true;
 
-    	GenerateSlots(internal);
-    	GenerarInventario(inv);
+    	addCustomSlots(internal);
+    	addPlayerInventorySlots(inv);
 	}
 	
 	public LuxMenu(int id, Inventory inv, FriendlyByteBuf buf) {
-    	this(id, inv, new ItemStackHandler(numslots));
+    	this(id, inv, new ItemStackHandler(NUM_SLOTS));
 	}
 	
 	protected static MenuType getMenu(){
 		return HaisistenteMenus.LUX_INVENTORY.get();
 	}
 
-	public void GenerateSlots(IItemHandler internal){
+	public void addCustomSlots(IItemHandler internal){
 		int slotid = 0;
-		for (int si = 0; si < numslots/9; ++si)
+		for (int si = 0; si < NUM_SLOTS/9; ++si)
 			for (int sj = 0; sj < 9; ++sj){
 				this.customSlots.put(slotid, this.addSlot(new SlotItemHandler(internal, slotid, 8 + 18*sj, 39 + 18*si)));
 				slotid++;
 			}
 	}
 
-	public void GenerarInventario(Inventory inv){
+	public void addPlayerInventorySlots(Inventory inv){
 		for (int si = 0; si < 3; ++si)
 			for (int sj = 0; sj < 9; ++sj)
-				this.addSlot(new Slot(inv, sj + (si + 1) * 9, 0 + 8 + sj * 18, 0 + InvStart + si * 18));
+				this.addSlot(new Slot(inv, sj + (si + 1) * 9, 0 + 8 + sj * 18, 0 + invStart + si * 18));
 		for (int si = 0; si < 9; ++si)
-			this.addSlot(new Slot(inv, si, 0 + 8 + si * 18, 0 + InvStart + 58));		
+			this.addSlot(new Slot(inv, si, 0 + 8 + si * 18, 0 + invStart + 58));		
 	}
 
 	@Override
@@ -102,11 +102,11 @@ public class LuxMenu extends AbstractContainerMenu implements Supplier<Map<Integ
 					return ItemStack.EMPTY;
 				slot.onQuickCraft(itemstack1, itemstack);
 			} else if (!this.moveItemStackTo(itemstack1, 0, 0, false)) {
-				if (index < 0 + numslots) {
-					if (!this.moveItemStackTo(itemstack1, 0 + numslots, this.slots.size(), true))
+				if (index < 0 + NUM_SLOTS) {
+					if (!this.moveItemStackTo(itemstack1, 0 + NUM_SLOTS, this.slots.size(), true))
 						return ItemStack.EMPTY;
 				} else {
-					if (!this.moveItemStackTo(itemstack1, 0, 0 + numslots, false))
+					if (!this.moveItemStackTo(itemstack1, 0, 0 + NUM_SLOTS, false))
 						return ItemStack.EMPTY;
 				}
 				return ItemStack.EMPTY;
@@ -201,7 +201,6 @@ public class LuxMenu extends AbstractContainerMenu implements Supplier<Map<Integ
 	@Override
 	public void removed(Player playerIn) {
 		super.removed(playerIn);
-		//SonidoMochilaProcedure.execute(world, playerIn, sound);
 		if (!bound && playerIn instanceof ServerPlayer serverPlayer) {
 			if (!serverPlayer.isAlive() || serverPlayer.hasDisconnected()) {
 				for (int j = 0; j < internal.getSlots(); ++j) {

@@ -1,7 +1,7 @@
-package net.mcreator.haisistente.entity;
+package net.anzhi.haisistente.entity;
 
-import net.mcreator.haisistente.entity.flag.FrameFlag;
-import net.mcreator.haisistente.entity.flag.States;
+import net.anzhi.haisistente.entity.flag.FrameFlag;
+import net.anzhi.haisistente.entity.flag.States;
 import software.bernie.geckolib.util.GeckoLibUtil;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.core.animation.RawAnimation;
@@ -58,8 +58,8 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.EnumSet;
 
-import net.mcreator.haisistente.init.HaisistenteItems;
-import net.mcreator.haisistente.HaisistenteMod;
+import net.anzhi.haisistente.init.HaisistenteItems;
+import net.anzhi.haisistente.HaisistenteMod;
 
 import net.minecraft.world.item.Items;
 
@@ -80,7 +80,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.EnumMap;
 
-import net.mcreator.haisistente.entity.flag.FrameFlagPacket;
+import net.anzhi.haisistente.entity.flag.FrameFlagPacket;
 
 public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEntity {
 	private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
@@ -89,7 +89,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 	public AnimationState<HaisistenteAbstract> animationState = null;
 	private static final EntityDataAccessor<Boolean> SIT = SynchedEntityData.defineId(HaisistenteAbstract.class, EntityDataSerializers.BOOLEAN);
 
-	public record StateValues(EntityDataAccessor<Boolean> State, String Animation) {}
+	public record StateValues(EntityDataAccessor<Boolean> accessor, String animation) {}
 	private static final Map<States, StateValues> STATES = new EnumMap<>(States.class);
 	private static final EntityDataAccessor<Boolean> EAT = SynchedEntityData.defineId(HaisistenteAbstract.class, EntityDataSerializers.BOOLEAN);
 	private static final EntityDataAccessor<Boolean> DANCE = SynchedEntityData.defineId(HaisistenteAbstract.class, EntityDataSerializers.BOOLEAN);
@@ -114,8 +114,8 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
     	FRAME_FLAGS.put(FrameFlag.FRAME_END_EAT, FRAME_END_EAT);
 	}
 	
-	public int typedance = 1;
-	public final int maxdances = 6;
+	public int danceType = 1;
+	public final int maxDances = 6;
 	public UUID tamer = null;
 	
 	@Nullable
@@ -136,7 +136,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 		
 		//STATES
 		for (StateValues acc : STATES.values()) {
-        	this.entityData.define(acc.State, false);
+        	this.entityData.define(acc.accessor(), false);
     	}
 		
 		//FRAMES_FLAGS
@@ -157,26 +157,26 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 		return "";
 	}
 
-	public List<String> AnimsWithHeadAnimation() {
-		ArrayList<String> lista = new ArrayList<>(List.of("eat", "swinmove", "backflip", "sleep"));
-		return lista;
+	public List<String> getAnimationsWithHeadRotation() {
+		ArrayList<String> list = new ArrayList<>(List.of("eat", "swinmove", "backflip", "sleep"));
+		return list;
 	}
 
-	public List<Item> ItemsCanEat() { 
-		ArrayList<Item> lista = new ArrayList<>(List.of(HaisistenteItems.BAMBOO_DORADO.get(),Blocks.BAMBOO.asItem()));
-		return lista;
+	public List<Item> getEdibleItems() { 
+		ArrayList<Item> list = new ArrayList<>(List.of(HaisistenteItems.GOLDEN_BAMBOO.get(),Blocks.BAMBOO.asItem()));
+		return list;
 	}
 
 	public void setEating() {
-    	ChangeState(States.EAT);
+    	changeState(States.EAT);
 	}
 
 	public void setDancing() {
-    	ChangeState(States.DANCE);
+    	changeState(States.DANCE);
 	}
 
 	public void setSleeping() {
-    	ChangeState(States.SLEEP);
+    	changeState(States.SLEEP);
 	}
 
 	public boolean isEating() {
@@ -196,16 +196,16 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 	}
 	
 	public void setState(States state, boolean value) {
-    	this.entityData.set(STATES.get(state).State, value);
+    	this.entityData.set(STATES.get(state).accessor(), value);
 	}
 
-	public void ChangeState(States state) {
-		OffState();
+	public void changeState(States state) {
+		clearState();
 		setState(state, true);
 	}
 
 	public boolean getState(States state) {
-    	return this.entityData.get(STATES.get(state).State);
+    	return this.entityData.get(STATES.get(state).accessor());
 	}
 
 	public States getCurrentState() {
@@ -217,10 +217,10 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 
 	public String getAnimation(States state) {
 		if (state == States.NONE) return "none";
-		return STATES.get(state).Animation;
+		return STATES.get(state).animation();
 	}
 
-	public boolean OffState(){
+	public boolean clearState(){
 		if (getCurrentState() != States.NONE) {
 			setState(getCurrentState(), false);
 			return true;
@@ -236,7 +236,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
     	return this.entityData.get(FRAME_FLAGS.get(flag));
 	}
 
-	public boolean OneShotFrameFlag(FrameFlag flag) {
+	public boolean consumeFrameFlag(FrameFlag flag) {
 		boolean val = getFrameFlag(flag);
 		if (val) {
 			setFrameFlag(flag, false);
@@ -281,7 +281,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
       			if (distanceSq <= d0 && getTicksUntilNextAttack() <= 0) {
       				this.mob.swing(InteractionHand.MAIN_HAND);
       			}
-      			if (OneShotFrameFlag(FrameFlag.FRAME_HIT)){
+      			if (consumeFrameFlag(FrameFlag.FRAME_HIT)){
 					this.resetAttackCooldown();
 					if (distanceSq <= d0) this.mob.doHurtTarget(target);
 				}
@@ -379,23 +379,23 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 		super.die(source);
 	}
 
-	public InteractionResult CustomInteract(Player sourceentity, InteractionHand hand) {
+	public InteractionResult customInteract(Player player, InteractionHand hand) {
 		return null;
 	}
 
 	@Override
-	public InteractionResult mobInteract(Player sourceentity, InteractionHand hand) {
-		ItemStack itemstack = sourceentity.getItemInHand(hand);
+	public InteractionResult mobInteract(Player player, InteractionHand hand) {
+		ItemStack itemstack = player.getItemInHand(hand);
 		InteractionResult retval = InteractionResult.sidedSuccess(this.level().isClientSide());
 		Item item = itemstack.getItem();
 		if (this.level().isClientSide()) {
-			retval = (this.isTame() && this.isOwnedBy(sourceentity) || this.isFood(itemstack)) ? InteractionResult.CONSUME : InteractionResult.PASS;
+			retval = (this.isTame() && this.isOwnedBy(player) || this.isFood(itemstack)) ? InteractionResult.CONSUME : InteractionResult.PASS;
 		} else {
-			InteractionResult custom = CustomInteract(sourceentity, hand);
+			InteractionResult custom = customInteract(player, hand);
 			if (custom != null) return custom;
-			if (isFood(sourceentity.getMainHandItem())) {
+			if (isFood(player.getMainHandItem())) {
 				if (canEat()) {
-					DarComida(sourceentity);
+					giveFood(player);
 					this.setPersistenceRequired();
         			return InteractionResult.SUCCESS;
 				}
@@ -404,8 +404,8 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 				}
 			}
 			if (canSit()){
-		    	InteractionResult interactionresult = super.mobInteract(sourceentity, hand);
-            	if ((!interactionresult.consumesAction() || this.isBaby()) && this.isOwnedBy(sourceentity)) {
+		    	InteractionResult interactionresult = super.mobInteract(player, hand);
+            	if ((!interactionresult.consumesAction() || this.isBaby()) && this.isOwnedBy(player)) {
                		this.setOrderedToSit(!this.isOrderedToSit());
                		this.jumping = false;
               	 	this.navigation.stop();
@@ -415,7 +415,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
                		return interactionresult;
 		    	}
 			} else {
-				retval = super.mobInteract(sourceentity, hand);
+				retval = super.mobInteract(player, hand);
 				if (retval == InteractionResult.SUCCESS || retval == InteractionResult.CONSUME)
 					this.setPersistenceRequired();
 			}
@@ -431,20 +431,20 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 		return !isEating() && this.isTame();
 	}
 	
-	private void DarComida(Player sourceentity){
-		ItemStack _setstack = sourceentity.getMainHandItem().copy();
-		_setstack.setCount(1);
-		this.setItemInHand(InteractionHand.MAIN_HAND, _setstack);
-		sourceentity.getInventory().setChanged();
-		sourceentity.getMainHandItem().shrink(1);
+	private void giveFood(Player player){
+		ItemStack foodStack = player.getMainHandItem().copy();
+		foodStack.setCount(1);
+		this.setItemInHand(InteractionHand.MAIN_HAND, foodStack);
+		player.getInventory().setChanged();
+		player.getMainHandItem().shrink(1);
 		setEating();
         this.jumping = false;
         this.navigation.stop();
         this.setTarget((LivingEntity)null);
-        tamer = sourceentity.getUUID();
+        tamer = player.getUUID();
 	}
 
-	public void ParticlesEating(){
+	public void spawnEatingParticles(){
 		ItemStack itemStack = this.getItemInHand(InteractionHand.MAIN_HAND);
 		if (itemStack.isEmpty()) return;
 		if (!getFrameFlag(FrameFlag.FRAME_START_EAT)) return;
@@ -470,7 +470,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 
 	public void tryTame() {
 		if (!this.isTame()){
-         	if (((this.random.nextInt(3) == 0 && this.getMainHandItem().getItem() == Blocks.BAMBOO.asItem()) || this.getMainHandItem().getItem() == HaisistenteItems.BAMBOO_DORADO.get()) 
+         	if (((this.random.nextInt(3) == 0 && this.getMainHandItem().getItem() == Blocks.BAMBOO.asItem()) || this.getMainHandItem().getItem() == HaisistenteItems.GOLDEN_BAMBOO.get()) 
          	&& !net.minecraftforge.event.ForgeEventFactory.onAnimalTame(this, level().getPlayerByUUID(this.tamer))) {
             	this.tame(level().getPlayerByUUID(this.tamer));
             	this.navigation.stop();
@@ -503,7 +503,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 		this.refreshDimensions();
 	}
 
-	public EntityDimensions CustomDimensions(Pose pose) {
+	public EntityDimensions getCustomDimensions(Pose pose) {
 		if (isSitting()){
 			return EntityDimensions.fixed(0.65F, 1.1F);
 		} else if (isSleepingOnOwner()){
@@ -517,14 +517,14 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 	
 	@Override
 	public EntityDimensions getDimensions(Pose p_33597_) {
-		EntityDimensions dimension = CustomDimensions(p_33597_);
+		EntityDimensions dimension = getCustomDimensions(p_33597_);
 		if (dimension != null) return dimension;
 		return EntityDimensions.fixed(0.65F, 1.3F);
 	}
 
 	@Override
 	public boolean isFood(ItemStack stack) {
-		return ItemsCanEat().contains(stack.getItem());
+		return getEdibleItems().contains(stack.getItem());
 	}
 
 	@Override
@@ -555,7 +555,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
     	return d;
 	}
 
-	public PlayState MovementAnimationController(AnimationState event) {
+	public PlayState handleMovementAnimation(AnimationState event) {
 		if (this.isSitting()){
 			return event.setAndContinue(RawAnimation.begin().thenLoop("sitidle"));
 		}
@@ -570,7 +570,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 
 	private PlayState movementPredicate(AnimationState event) {
 		if (this.getCurrentState() == States.NONE) {
-			return MovementAnimationController(event);
+			return handleMovementAnimation(event);
 		}
 		event.getController().forceAnimationReset();
 		return PlayState.STOP;
@@ -596,11 +596,11 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 
 	String prevAnim = "none";
 
-	public PlayState CustomAnimationController(AnimationState event,States state, String animation) {
+	public PlayState handleStateAnimation(AnimationState event,States state, String animation) {
 		if (event.getController().getAnimationState() == AnimationController.State.STOPPED || !prevAnim.equals(animation)) {
         	event.getController().forceAnimationReset();
         	if (state == States.DANCE) {
-        		event.getController().setAnimation(RawAnimation.begin().thenPlay(animation+typedance));
+        		event.getController().setAnimation(RawAnimation.begin().thenPlay(animation+danceType));
         	} else {
         		event.getController().setAnimation(RawAnimation.begin().thenPlay(animation));
         	}
@@ -613,7 +613,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
     	States state = this.getCurrentState();
     	String animation = getAnimation(state);
 		if (state != States.NONE) {
-			return CustomAnimationController(event,state,animation);
+			return handleStateAnimation(event,state,animation);
 		}
 		prevAnim = "none";
         return PlayState.STOP;
@@ -622,7 +622,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 	@Override
 	protected void tickDeath() {
 		++this.deathTime;
-		OffState();
+		clearState();
 		if (this.deathTime == 20) {
 			this.level().broadcastEntityEvent(this, (byte)60);
 			this.remove(Entity.RemovalReason.KILLED);
@@ -630,19 +630,19 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
 		}
 	}
 
-	public void MovementFrameFlags(AnimatableManager.ControllerRegistrar data) {
+	public void onMovementKeyframe(AnimatableManager.ControllerRegistrar data) {
 	}
 
-	public void AttackFrameFlags(AnimatableManager.ControllerRegistrar data) {	
+	public void onAttackKeyframe(AnimatableManager.ControllerRegistrar data) {	
 	}
 
-	public void CustomFrameFlags(AnimatableManager.ControllerRegistrar data) {	
+	public void onCustomKeyframe(AnimatableManager.ControllerRegistrar data) {	
 	}
 
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar data) {
 		data.add(new AnimationController<>(this, "movement", 4, this::movementPredicate).setCustomInstructionKeyframeHandler(event -> {
-    		MovementFrameFlags(data);
+    		onMovementKeyframe(data);
 		}));
 		data.add(new AnimationController<>(this, "attacking", 4, this::attackingPredicate).setCustomInstructionKeyframeHandler(event -> {
     		String instruction = event.getKeyframeData().getInstructions();
@@ -657,7 +657,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
             		);
        	 		}
     		}
-    		AttackFrameFlags(data);
+    		onAttackKeyframe(data);
 		}));
 		data.add(new AnimationController<>(this, "procedure", 4, this::procedurePredicate).setCustomInstructionKeyframeHandler(event -> {
     		String instruction = event.getKeyframeData().getInstructions();
@@ -680,7 +680,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
             		);
        	 		}
     		}
-    		CustomFrameFlags(data);
+    		onCustomKeyframe(data);
 		}));
 	}
 
@@ -748,9 +748,9 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
    		}
 
    		public void tick() {
-   			this.haise.ParticlesEating();
+   			this.haise.spawnEatingParticles();
    			eatTick++;
-   			if (this.haise.OneShotFrameFlag(FrameFlag.FRAME_END_EAT)){
+   			if (this.haise.consumeFrameFlag(FrameFlag.FRAME_END_EAT)){
    				this.haise.setState(States.EAT, false);
    			}
    		}
@@ -763,7 +763,7 @@ public abstract class HaisistenteAbstract extends TamableAnimal implements GeoEn
    			this.haise.tryTame();
    			this.haise.whenFeeding();
 			if (this.haise.isTame()) {
-				if (this.haise.getMainHandItem().getItem() == HaisistenteItems.BAMBOO_DORADO.get()){
+				if (this.haise.getMainHandItem().getItem() == HaisistenteItems.GOLDEN_BAMBOO.get()){
 					this.haise.heal(6);
 				}
 				else {

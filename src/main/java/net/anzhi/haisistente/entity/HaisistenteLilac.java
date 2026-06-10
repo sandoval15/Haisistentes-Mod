@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity;
+package net.anzhi.haisistente.entity;
 
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -13,7 +13,7 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.Difficulty;
 import net.minecraft.server.level.ServerLevel;
-import net.mcreator.haisistente.init.HaisistenteEntities;
+import net.anzhi.haisistente.init.HaisistenteEntities;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 
@@ -38,12 +38,12 @@ public class HaisistenteLilac extends FlyingHaisistente {
 	
 	@Override
 	public String getModel() {
-		return "geo/ropa_gato.geo.json";
+		return "geo/outfit_cat.geo.json";
 	}
 	
 	@Override
 	public String getGeoAnimation() {
-		return "animations/ropa_gato.animation.json";
+		return "animations/outfit_cat.animation.json";
 	}
 
 	public static AttributeSupplier.Builder createAttributes() {
@@ -58,8 +58,8 @@ public class HaisistenteLilac extends FlyingHaisistente {
 	}
 
 	@Override
-	public InteractionResult CustomInteract(Player sourceentity, InteractionHand hand) {
-		if (!level().isClientSide && sourceentity.isShiftKeyDown() && isOwnedBy(sourceentity)) {
+	public InteractionResult customInteract(Player player, InteractionHand hand) {
+		if (!level().isClientSide && player.isShiftKeyDown() && isOwnedBy(player)) {
 		}
 		return null;
 	}

@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity;
+package net.anzhi.haisistente.entity;
 
 import javax.annotation.Nullable;
 import net.minecraft.world.level.Level;
@@ -25,7 +25,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 
-import net.mcreator.haisistente.goal.FlyingFollowOwnerGoal;
+import net.anzhi.haisistente.goal.FlyingFollowOwnerGoal;
 
 import net.minecraft.core.Direction;
 
@@ -47,7 +47,7 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 	private FlyingFollowOwnerGoal flyowner;
 	private FollowOwnerGoal walkowner;
 
-	private boolean CanSwitchFly = false;
+	private boolean canSwitchFly = false;
 	
 	public FlyingHaisistente(EntityType<? extends HaisistenteAbstract> type, Level world) {
 		super(type, world);
@@ -112,7 +112,7 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
    		if (this.entityData.get(FLYING) == value) return;
    		this.navigation.stop();
    		this.entityData.set(FLYING, value);
-   		CanSwitchFly = true;
+   		canSwitchFly = true;
    	}
 
    	public void switchFly(boolean value) {
@@ -133,7 +133,7 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
    	}
 
    	public void whenTamed() {
-   		CanSwitchFly = true;
+   		canSwitchFly = true;
    	}
 
 	protected PathNavigation createNavigation(Level level) {
@@ -159,8 +159,8 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
     @Override
     public void aiStep() {
     	super.aiStep();
-    	if (CanSwitchFly) {
-    		CanSwitchFly = false;
+    	if (canSwitchFly) {
+    		canSwitchFly = false;
     		switchFly(isFlying());
     	}
     	Vec3 vec3 = this.getDeltaMovement();
@@ -184,11 +184,11 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
    	}
    
 	@Override
-    public PlayState MovementAnimationController(AnimationState event) {
+    public PlayState handleMovementAnimation(AnimationState event) {
     	 if (!this.onGround()) {
             return event.setAndContinue(RawAnimation.begin().thenLoop("idlefly"));
         } 
-    	return super.MovementAnimationController(event);
+    	return super.handleMovementAnimation(event);
     }
 
 	static class FlyingHaisistenteMoveControl extends MoveControl {

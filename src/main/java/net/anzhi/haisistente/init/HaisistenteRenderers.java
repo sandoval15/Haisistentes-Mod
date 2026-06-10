@@ -1,14 +1,14 @@
-package net.mcreator.haisistente.init;
+package net.anzhi.haisistente.init;
 
-import net.mcreator.haisistente.HaisistenteMod;
+import net.anzhi.haisistente.HaisistenteMod;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-import net.mcreator.haisistente.client.renderer.HaisistenteRenderer;
+import net.anzhi.haisistente.client.renderer.HaisistenteRenderer;
 
-import net.mcreator.haisistente.entity.lux.LuxHatLayer;
+import net.anzhi.haisistente.entity.lux.LuxHatLayer;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity.layer;
+package net.anzhi.haisistente.entity.layer;
 
 import net.minecraft.world.item.ItemDisplayContext;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -13,10 +13,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 
-import net.mcreator.haisistente.entity.HaisistenteAbstract;
+import net.anzhi.haisistente.entity.HaisistenteAbstract;
 
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
-import net.mcreator.haisistente.entity.flag.FrameFlag;
+import net.anzhi.haisistente.entity.flag.FrameFlag;
 
 
 public class EatGeoRendererLayer extends GeoRenderLayer<HaisistenteAbstract> {

@@ -1,4 +1,4 @@
-package net.mcreator.haisistente.entity.model;
+package net.anzhi.haisistente.entity.model;
 
 import software.bernie.geckolib.model.data.EntityModelData;
 import software.bernie.geckolib.model.GeoModel;
@@ -9,12 +9,7 @@ import software.bernie.geckolib.constant.DataTickets;
 import net.minecraft.util.Mth;
 import net.minecraft.resources.ResourceLocation;
 
-import net.mcreator.haisistente.entity.HaisistenteAbstract;
-import com.ibm.icu.util.DangiCalendar;
-import com.ibm.icu.util.DangiCalendar;
-import com.ibm.icu.util.DangiCalendar;
-import com.ibm.icu.util.DangiCalendar;
-import com.ibm.icu.util.DangiCalendar;
+import net.anzhi.haisistente.entity.HaisistenteAbstract;
 
 public class HaisistenteModel extends GeoModel<HaisistenteAbstract> {
 	@Override
@@ -38,13 +33,13 @@ public class HaisistenteModel extends GeoModel<HaisistenteAbstract> {
 		animatable.animationState  = animationState;
 		boolean dance = true;
 		boolean canrothead = true;
-		for (int i = 1; i <= animatable.maxdances; i++){
+		for (int i = 1; i <= animatable.maxDances; i++){
 			dance = animationState.isCurrentAnimationStage("dance"+i);
 			if (dance)
 				break;
 		}
 
-		for (String s : animatable.AnimsWithHeadAnimation()) {
+		for (String s : animatable.getAnimationsWithHeadRotation()) {
     		canrothead = !animationState.isCurrentAnimationStage(s);
     		if (!canrothead)
 				break; 
