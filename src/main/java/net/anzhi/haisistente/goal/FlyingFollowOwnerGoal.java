@@ -25,12 +25,7 @@ import java.util.EnumSet;
  */
 public class FlyingFollowOwnerGoal extends Goal {
 	private static final double TELEPORT_DISTANCE_SQR = 48.0D * 48.0D;
-	private static final double TAKE_OFF_DISTANCE = 14.0D;
-	private static final double LAND_DISTANCE = 6.0D;
-	private static final double VERTICAL_GAP_FOR_FLIGHT = 4.0D;
 	private static final int PATH_RECALC_TICKS = 10;
-	private static final int WALK_STUCK_TICKS_FOR_FLIGHT = 40;
-	private static final int FLY_STUCK_TICKS_FOR_ASSIST = 20;
 
 	private final FlyingHaisistente mob;
 	private final LevelReader world;
@@ -122,16 +117,8 @@ public class FlyingFollowOwnerGoal extends Goal {
 		double dist = this.mob.distanceTo(this.owner);
 		trackStuckness();
 
-		boolean ownerIsFast = this.owner.isSprinting() || this.owner.isFallFlying() || this.owner.getVehicle() != null || !this.owner.onGround();
-		boolean bigVerticalGap = Math.abs(this.owner.getY() - this.mob.getY()) > VERTICAL_GAP_FOR_FLIGHT;
-
-		boolean fly;
-		if (this.mob.isFlightMode()) {
-			// Stay airborne until the owner slows down and we are close again
-			fly = ownerIsFast || dist > LAND_DISTANCE || bigVerticalGap;
-		} else {
-			fly = ownerIsFast || dist > TAKE_OFF_DISTANCE || bigVerticalGap || this.stuckTicks > WALK_STUCK_TICKS_FOR_FLIGHT;
-		}
+		boolean ownerIsFast = this.owner.isSprinting() || this.owner.isFallFlying() || this.owner.getVehicle() != null;
+		boolean fly = this.mob.shouldFly(this.owner, dist, ownerIsFast, this.stuckTicks);
 		this.mob.setFlightMode(fly);
 
 		if (--this.recalcCooldown <= 0) {
@@ -140,23 +127,10 @@ public class FlyingFollowOwnerGoal extends Goal {
 				tryToTeleportNearEntity();
 				return;
 			}
-			double speed;
-			if (fly) {
-				// Fast flight; even faster when left well behind
-				speed = dist > 10.0D ? this.baseSpeed * 2.2D : this.baseSpeed * 1.6D;
-			} else {
-				speed = dist > 10.0D ? this.baseSpeed * 1.2D : this.baseSpeed;
-			}
+			double speed = fly
+					? this.baseSpeed * this.mob.flightSpeedFactor(dist)
+					: this.baseSpeed * this.mob.walkSpeedFactor(dist);
 			this.mob.getNavigation().moveTo(this.owner, speed);
-		}
-
-		// Flight assist: airborne but pathfinding can't make progress
-		// (dense leaves, odd geometry) -> steer straight at the owner.
-		if (fly && this.stuckTicks > FLY_STUCK_TICKS_FOR_ASSIST) {
-			Vec3 target = this.owner.position().add(0.0D, 1.0D, 0.0D);
-			Vec3 dir = target.subtract(this.mob.position()).normalize();
-			Vec3 assist = this.mob.getDeltaMovement().scale(0.7D).add(dir.scale(0.15D)).add(0.0D, 0.06D, 0.0D);
-			this.mob.setDeltaMovement(assist);
 		}
 	}
 
