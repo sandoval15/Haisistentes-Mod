@@ -1,4 +1,4 @@
-﻿package net.anzhi.haisistente.entity.lux;
+package net.anzhi.haisistente.entity.lux;
 
 import net.minecraftforge.items.SlotItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
