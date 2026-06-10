@@ -121,12 +121,19 @@ public class FlyingFollowOwnerGoal extends Goal {
 		boolean fly = this.mob.shouldFly(this.owner, dist, ownerIsFast, this.stuckTicks);
 		this.mob.setFlightMode(fly);
 
-		if (--this.recalcCooldown <= 0) {
-			this.recalcCooldown = PATH_RECALC_TICKS;
+		// Far behind: direct dive toward the owner, every tick, no path nodes
+		if (fly && dist > FlyingHaisistente.DIRECT_PURSUIT_DISTANCE) {
 			if (dist * dist >= TELEPORT_DISTANCE_SQR) {
 				tryToTeleportNearEntity();
 				return;
 			}
+			this.mob.flyDirectlyTowards(this.owner);
+			this.recalcCooldown = 0;
+			return;
+		}
+
+		if (--this.recalcCooldown <= 0) {
+			this.recalcCooldown = PATH_RECALC_TICKS;
 			double speed = fly
 					? this.baseSpeed * this.mob.flightSpeedFactor(dist)
 					: this.baseSpeed * this.mob.walkSpeedFactor(dist);

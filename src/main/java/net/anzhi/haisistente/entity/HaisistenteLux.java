@@ -75,7 +75,7 @@ public class HaisistenteLux extends FlyingHaisistente {
 		builder = builder.add(Attributes.ATTACK_DAMAGE, 1.5D);
 		builder = builder.add(Attributes.FOLLOW_RANGE, 16.0D);
 		builder = builder.add(Attributes.FOLLOW_RANGE, 16);
-		builder = builder.add(Attributes.FLYING_SPEED, 1.0);
+		builder = builder.add(Attributes.FLYING_SPEED, 2.0);
 		return builder;
 	}
 

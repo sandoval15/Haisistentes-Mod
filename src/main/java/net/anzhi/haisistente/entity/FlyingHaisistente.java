@@ -60,6 +60,19 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 	private static final double MAX_FLIGHT_SPEED_FACTOR = 2.4D;
 	private static final double MAX_WALK_SPEED_FACTOR = 1.25D;
 
+	/**
+	 * Beyond this distance, pathfinding is skipped and the mob steers its
+	 * velocity straight at the target: node-based navigation caps effective
+	 * speed far below what a real dive should feel like.
+	 */
+	public static final double DIRECT_PURSUIT_DISTANCE = 8.0D;
+	/** Pursuit cruise speed in blocks/tick (~14 m/s, ~2.5x player sprint). */
+	private static final double PURSUIT_SPEED = 0.7D;
+	/** Velocity decay per tick during pursuit; with the matching acceleration
+	 *  below it converges on PURSUIT_SPEED. */
+	private static final double PURSUIT_DRAG = 0.9D;
+	private static final double PURSUIT_ACCEL = PURSUIT_SPEED * (1.0D - PURSUIT_DRAG) / PURSUIT_DRAG;
+
 	private GroundPathNavigation groundNav;
 	private FlyingPathNavigation airNav;
 	private boolean flightMode;
@@ -125,6 +138,23 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 	/** Flight speed multiplier: calm nearby, fast when closing distance. */
 	public double flightSpeedFactor(double distance) {
 		return Mth.clamp(1.0D + (distance - LAND_DISTANCE) * 0.12D, 1.0D, MAX_FLIGHT_SPEED_FACTOR);
+	}
+
+	/**
+	 * Direct flight: steers velocity straight at the target, ignoring path
+	 * nodes. Aims slightly above it so terrain clips less; the collision hop
+	 * in {@link SmoothFlightMoveControl} covers the rest.
+	 */
+	public void flyDirectlyTowards(LivingEntity target) {
+		this.getNavigation().stop();
+		Vec3 aim = target.position().add(0.0D, 1.5D, 0.0D);
+		Vec3 dir = aim.subtract(this.position()).normalize();
+		Vec3 velocity = this.getDeltaMovement().scale(PURSUIT_DRAG).add(dir.scale(PURSUIT_ACCEL));
+		this.setDeltaMovement(velocity);
+
+		float yaw = (float) (Mth.atan2(velocity.z, velocity.x) * (180F / (float) Math.PI)) - 90.0F;
+		this.setYRot(yaw);
+		this.yBodyRot = yaw;
 	}
 
 	/** Walk speed multiplier: light jog when the owner pulls ahead. */
