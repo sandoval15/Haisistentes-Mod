@@ -1,17 +1,18 @@
 modLoader="javafml"
 loaderVersion="[47,)"
-license="Not specified"
+license="All Rights Reserved"
 
 [[mods]]
 modId="haisistente"
 version="1.0.0"
-displayName="haisistente"
-displayURL="https://mcreator.net"
-credits="Created using mod maker MCreator - https://mcreator.net/about"
-authors="INTEL, MCreator"
-
-# Start of user code block mod configuration
-# End of user code block mod configuration
+displayName="Haisistente"
+authors="INTEL"
+description='''
+Adds Haisistentes: tameable companion creatures with GeckoLib animations.
+Feed them bamboo to tame them, play music discs to make them dance,
+and find their bamboo-jungle village (the Haisillage). Includes a flying
+companion with its own inventory and a curable zombie variant.
+'''
 
 [[dependencies.haisistente]]
     modId="minecraft"
@@ -20,6 +21,12 @@ authors="INTEL, MCreator"
     ordering="AFTER"
     side="BOTH"
 
+[[dependencies.haisistente]]
+    modId="geckolib"
+    mandatory=true
+    versionRange="[4.4,)"
+    ordering="NONE"
+    side="BOTH"
 
 [[dependencies.haisistente]]
     modId="kleidersplayerrenderer"
@@ -27,19 +34,10 @@ authors="INTEL, MCreator"
     versionRange="[0,)"
     ordering="NONE"
     side="BOTH"
+
 [[dependencies.haisistente]]
     modId="curios_api"
     mandatory=false
     versionRange="[0,)"
     ordering="NONE"
     side="BOTH"
-[[dependencies.haisistente]]
-    modId="geckolib"
-    mandatory=false
-    versionRange="[0,)"
-    ordering="NONE"
-    side="BOTH"
-
-
-# Start of user code block dependencies configuration
-# End of user code block dependencies configuration
