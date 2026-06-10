@@ -6,9 +6,11 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.ai.control.FlyingMoveControl;
+import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.FollowOwnerGoal;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomFlyingGoal;
 import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
+import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.util.LandRandomPos;
 import net.minecraft.world.entity.animal.FlyingAnimal;
@@ -25,15 +27,54 @@ import software.bernie.geckolib.core.animation.AnimationState;
 import net.anzhi.haisistente.goal.FlyingFollowOwnerGoal;
 
 /**
- * Natural flight base: walks on the ground like any mob and only flies
- * when a path requires it (following its owner, wandering to a tree, fleeing).
- * When idle in the air, gravity brings it down gently and it lands.
+ * Flying Haisistente base with two real movement modes:
+ * - WALK (default): ground navigation, walks like any mob.
+ * - FLY: air navigation, used to catch up with a sprinting owner, cross
+ *   obstacles, or wander to a tree perch. Lands and goes back to walking
+ *   when the situation calms down.
+ * Goals drive the mode through {@link #setFlightMode(boolean)}.
  */
 public abstract class FlyingHaisistente extends HaisistenteAbstract implements FlyingAnimal {
 
+	private GroundPathNavigation groundNav;
+	private FlyingPathNavigation airNav;
+	private boolean flightMode;
+
 	public FlyingHaisistente(EntityType<? extends HaisistenteAbstract> type, Level world) {
 		super(type, world);
-		this.moveControl = new FlyingMoveControl(this, 10, false);
+		this.moveControl = new MoveControl(this);
+	}
+
+	@Override
+	protected PathNavigation createNavigation(Level level) {
+		this.groundNav = new GroundPathNavigation(this, level);
+		return this.groundNav;
+	}
+
+	public boolean isFlightMode() {
+		return this.flightMode;
+	}
+
+	public void setFlightMode(boolean fly) {
+		if (this.flightMode == fly) {
+			return;
+		}
+		this.flightMode = fly;
+		this.navigation.stop();
+		if (fly) {
+			if (this.airNav == null) {
+				this.airNav = new FlyingPathNavigation(this, level());
+				this.airNav.setCanOpenDoors(false);
+				this.airNav.setCanFloat(true);
+				this.airNav.setCanPassDoors(true);
+			}
+			this.moveControl = new FlyingMoveControl(this, 10, false);
+			this.navigation = this.airNav;
+		} else {
+			this.setNoGravity(false);
+			this.moveControl = new MoveControl(this);
+			this.navigation = this.groundNav;
+		}
 	}
 
 	@Override
@@ -42,22 +83,13 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 		this.goalSelector.getAvailableGoals().removeIf(
 			g -> g.getGoal() instanceof FollowOwnerGoal
 		);
-		this.goalSelector.addGoal(6, new FlyingFollowOwnerGoal(this, 1.2D, (float) 10, (float) 2, true));
+		this.goalSelector.addGoal(6, new FlyingFollowOwnerGoal(this, 1.1D, (float) 10, (float) 2, true));
 		this.goalSelector.addGoal(7, new FlyingHaisistenteWanderGoal(this, 0.6D));
 	}
 
 	@Override
 	public boolean isFlying() {
 		return !this.onGround();
-	}
-
-	@Override
-	protected PathNavigation createNavigation(Level level) {
-		FlyingPathNavigation flyingpathnavigation = new FlyingPathNavigation(this, level);
-		flyingpathnavigation.setCanOpenDoors(false);
-		flyingpathnavigation.setCanFloat(true);
-		flyingpathnavigation.setCanPassDoors(true);
-		return flyingpathnavigation;
 	}
 
 	@Override
@@ -87,16 +119,25 @@ public abstract class FlyingHaisistente extends HaisistenteAbstract implements F
 	}
 
 	static class FlyingHaisistenteWanderGoal extends WaterAvoidingRandomFlyingGoal {
+		private final FlyingHaisistente haise;
 		private int stuckTicks;
 
-		public FlyingHaisistenteWanderGoal(PathfinderMob mob, double speed) {
+		public FlyingHaisistenteWanderGoal(FlyingHaisistente mob, double speed) {
 			super(mob, speed);
+			this.haise = mob;
 		}
 
 		@Override
 		public void start() {
 			stuckTicks = 0;
+			this.haise.setFlightMode(true);
 			super.start();
+		}
+
+		@Override
+		public void stop() {
+			super.stop();
+			this.haise.setFlightMode(false);
 		}
 
 		@Override

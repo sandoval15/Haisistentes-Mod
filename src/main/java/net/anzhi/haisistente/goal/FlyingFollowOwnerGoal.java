@@ -3,7 +3,6 @@ package net.anzhi.haisistente.goal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.LeavesBlock;
@@ -12,21 +11,28 @@ import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
 import net.minecraft.world.phys.Vec3;
 
+import net.anzhi.haisistente.entity.FlyingHaisistente;
+
 import java.util.EnumSet;
 
 /**
- * Owner-follow for flying Haisistentes with no short-range teleporting.
- * The mob walks after its owner when the path stays on the ground and
- * flies to catch up when it falls behind or the terrain demands it.
- * Teleporting only happens as a last resort when the owner is so far
- * away the pet would otherwise be lost.
+ * Owner-follow for flying Haisistentes with two movement modes:
+ * - The owner walks and the pet is reasonably close -> it WALKS behind them.
+ * - The owner sprints, glides, rides, or the pet falls behind or the terrain
+ *   blocks the way -> it FLIES, fast, to catch up; then lands and walks again.
+ * Teleporting only happens as a last resort when the owner is so far away
+ * the pet would otherwise be lost.
  */
 public class FlyingFollowOwnerGoal extends Goal {
 	private static final double TELEPORT_DISTANCE_SQR = 48.0D * 48.0D;
+	private static final double TAKE_OFF_DISTANCE = 14.0D;
+	private static final double LAND_DISTANCE = 6.0D;
+	private static final double VERTICAL_GAP_FOR_FLIGHT = 4.0D;
 	private static final int PATH_RECALC_TICKS = 10;
-	private static final int STUCK_TICKS_FOR_FLIGHT_ASSIST = 20;
+	private static final int WALK_STUCK_TICKS_FOR_FLIGHT = 40;
+	private static final int FLY_STUCK_TICKS_FOR_ASSIST = 20;
 
-	private final TamableAnimal mob;
+	private final FlyingHaisistente mob;
 	private final LevelReader world;
 	private final double baseSpeed;
 	private final float startDist;
@@ -38,7 +44,7 @@ public class FlyingFollowOwnerGoal extends Goal {
 	private Vec3 lastPos = Vec3.ZERO;
 	private float oldWaterCost;
 
-	public FlyingFollowOwnerGoal(TamableAnimal mob, double speed, float startDist, float stopDist, boolean teleportToLeaves) {
+	public FlyingFollowOwnerGoal(FlyingHaisistente mob, double speed, float startDist, float stopDist, boolean teleportToLeaves) {
 		this.mob = mob;
 		this.world = mob.level();
 		this.baseSpeed = speed;
@@ -98,6 +104,7 @@ public class FlyingFollowOwnerGoal extends Goal {
 		this.owner = null;
 		this.mob.getNavigation().stop();
 		this.mob.setPathfindingMalus(BlockPathTypes.WATER, this.oldWaterCost);
+		this.mob.setFlightMode(false);
 	}
 
 	@Override
@@ -107,23 +114,40 @@ public class FlyingFollowOwnerGoal extends Goal {
 			return;
 		}
 
-		double distSqr = this.mob.distanceToSqr(this.owner);
+		double dist = this.mob.distanceTo(this.owner);
 		trackStuckness();
+
+		boolean ownerIsFast = this.owner.isSprinting() || this.owner.isFallFlying() || this.owner.getVehicle() != null;
+		boolean bigVerticalGap = Math.abs(this.owner.getY() - this.mob.getY()) > VERTICAL_GAP_FOR_FLIGHT;
+
+		boolean fly;
+		if (this.mob.isFlightMode()) {
+			// Stay airborne until the owner slows down and we are close again
+			fly = ownerIsFast || dist > LAND_DISTANCE || bigVerticalGap;
+		} else {
+			fly = ownerIsFast || dist > TAKE_OFF_DISTANCE || bigVerticalGap || this.stuckTicks > WALK_STUCK_TICKS_FOR_FLIGHT;
+		}
+		this.mob.setFlightMode(fly);
 
 		if (--this.recalcCooldown <= 0) {
 			this.recalcCooldown = PATH_RECALC_TICKS;
-			if (distSqr >= TELEPORT_DISTANCE_SQR) {
+			if (dist * dist >= TELEPORT_DISTANCE_SQR) {
 				tryToTeleportNearEntity();
 				return;
 			}
-			// Hurry (and take off) when left behind; stroll when just out of range
-			double speed = distSqr > 16.0D * 16.0D ? this.baseSpeed * 1.4D : this.baseSpeed;
+			double speed;
+			if (fly) {
+				// Fast flight; even faster when left well behind
+				speed = dist > 10.0D ? this.baseSpeed * 1.8D : this.baseSpeed * 1.4D;
+			} else {
+				speed = dist > 10.0D ? this.baseSpeed * 1.2D : this.baseSpeed;
+			}
 			this.mob.getNavigation().moveTo(this.owner, speed);
 		}
 
-		// Flight assist: if pathfinding can't make progress (walls, cliffs,
-		// dense leaves), steer straight toward the owner through the air.
-		if (this.stuckTicks > STUCK_TICKS_FOR_FLIGHT_ASSIST) {
+		// Flight assist: airborne but pathfinding can't make progress
+		// (dense leaves, odd geometry) -> steer straight at the owner.
+		if (fly && this.stuckTicks > FLY_STUCK_TICKS_FOR_ASSIST) {
 			Vec3 target = this.owner.position().add(0.0D, 1.0D, 0.0D);
 			Vec3 dir = target.subtract(this.mob.position()).normalize();
 			Vec3 assist = this.mob.getDeltaMovement().scale(0.7D).add(dir.scale(0.15D)).add(0.0D, 0.06D, 0.0D);
