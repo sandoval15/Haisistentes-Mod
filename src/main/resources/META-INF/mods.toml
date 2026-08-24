@@ -6,7 +6,7 @@ license="All Rights Reserved"
 modId="haisistente"
 version="1.0.0"
 displayName="Haisistente"
-authors="INTEL"
+authors="Anzhi"
 description='''
 Adds Haisistentes: tameable companion creatures with GeckoLib animations.
 Feed them bamboo to tame them, play music discs to make them dance,
