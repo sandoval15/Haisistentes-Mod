@@ -29,13 +29,6 @@ companion with its own inventory and a curable zombie variant.
     side="BOTH"
 
 [[dependencies.haisistente]]
-    modId="kleidersplayerrenderer"
-    mandatory=false
-    versionRange="[0,)"
-    ordering="NONE"
-    side="BOTH"
-
-[[dependencies.haisistente]]
     modId="curios_api"
     mandatory=false
     versionRange="[0,)"

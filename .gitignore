@@ -24,3 +24,5 @@ Thumbs.db
 
 # Forge
 crash-reports/
+# Claude (local, no se commitea)
+CLAUDE.md

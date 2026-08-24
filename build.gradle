@@ -68,7 +68,6 @@ minecraft {
 }
 
 repositories {
-    maven { url = "https://cursemaven.com" }
     maven { url = "https://maven.theillusivec4.top/" }
     maven { url = "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/" }
     mavenCentral()
@@ -76,9 +75,6 @@ repositories {
 
 dependencies {
     minecraft 'net.minecraftforge:forge:1.20.1-47.2.0'
-
-    // Curse
-    implementation fg.deobf("curse.maven:kleidersplayerrenderer-682065:5654821")
 
     // Curios
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:5.4.2+1.20.1")
