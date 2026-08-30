@@ -2,343 +2,350 @@ package net.anzhi.haisistente.entity;
 
 import javax.annotation.Nullable;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
-import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
-import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.network.syncher.EntityDataSerializers;
-import net.minecraft.network.syncher.EntityDataAccessor;
-import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.entity.ai.control.FlyingMoveControl;
+import net.minecraft.world.entity.ai.control.MoveControl;
+import net.minecraft.world.entity.ai.goal.FollowOwnerGoal;
+import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomFlyingGoal;
+import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
+import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
+import net.minecraft.world.entity.ai.util.LandRandomPos;
+import net.minecraft.world.entity.animal.FlyingAnimal;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.LeavesBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.animation.AnimationState;
 
-import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
-import net.minecraft.util.Mth;
-import net.minecraft.world.entity.ai.control.MoveControl;
-import net.minecraft.world.entity.ai.goal.FollowOwnerGoal;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.animal.FlyingAnimal;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.entity.ai.navigation.PathNavigation;
-
 import net.anzhi.haisistente.goal.FlyingFollowOwnerGoal;
 
-import net.minecraft.core.Direction;
-
-import net.minecraft.tags.BlockTags;
-
-import net.minecraft.world.level.block.LeavesBlock;
-
-import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomFlyingGoal;
-import net.minecraft.world.entity.ai.util.LandRandomPos;
-
-
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.nbt.CompoundTag;
-
+/**
+ * Flying Haisistente base with two real movement modes:
+ * - WALK (default): ground navigation, walks like any mob.
+ * - FLY: air navigation with smooth takeoffs, used to catch up with the
+ *   owner, cross obstacles, or wander to a tree perch.
+ *
+ * All flight mechanics (mode decision, approach speed, climb physics) live
+ * here so every goal and future flying entity reuses the same behavior
+ * through {@link #shouldFly}, {@link #flightSpeedFactor},
+ * {@link #walkSpeedFactor} and {@link #setFlightMode}.
+ */
 public abstract class FlyingHaisistente extends HaisistenteAbstract implements FlyingAnimal {
-	protected static final EntityDataAccessor<Boolean> FLYING = SynchedEntityData.defineId(FlyingHaisistente.class, EntityDataSerializers.BOOLEAN);
 
-	private FlyingFollowOwnerGoal flyowner;
-	private FollowOwnerGoal walkowner;
+	/** Walking distance band: beyond this it takes off even at a calm pace. */
+	public static final double TAKE_OFF_DISTANCE = 14.0D;
+	/** When the target moves fast (sprint/ride/glide), take off sooner. */
+	public static final double SPRINT_TAKE_OFF_DISTANCE = 8.0D;
+	/** Close enough to land and continue on foot. */
+	public static final double LAND_DISTANCE = 6.0D;
+	/** Height difference that walking cannot solve. */
+	public static final double VERTICAL_GAP_FOR_FLIGHT = 4.0D;
+	/** Ticks without progress on foot before resorting to flight. */
+	public static final int WALK_STUCK_TICKS_FOR_FLIGHT = 40;
+	/** In combat, take off sooner when ground pathing stalls. */
+	public static final int COMBAT_STUCK_TICKS_FOR_FLIGHT = 20;
 
-	private boolean canSwitchFly = false;
-	
+	/** Climb rate cap so takeoffs ramp up instead of launching. */
+	private static final double MAX_CLIMB_SPEED = 0.3D;
+	/** Upward nudge to hop low obstacles the flight path clips. */
+	private static final double OBSTACLE_HOP_BOOST = 0.1D;
+	/** Max approach-speed multipliers, scaled down with proximity. */
+	private static final double MAX_FLIGHT_SPEED_FACTOR = 2.4D;
+	private static final double MAX_WALK_SPEED_FACTOR = 1.25D;
+
+	/**
+	 * Beyond this distance, pathfinding is skipped and the mob steers its
+	 * velocity straight at the target: node-based navigation caps effective
+	 * speed far below what a real dive should feel like.
+	 */
+	public static final double DIRECT_PURSUIT_DISTANCE = 8.0D;
+	/** Pursuit cruise speed in blocks/tick (~14 m/s, ~2.5x player sprint). */
+	private static final double PURSUIT_SPEED = 0.7D;
+	/** Velocity decay per tick during pursuit; together with the
+	 *  per-tick acceleration it converges on the cruise speed. */
+	private static final double PURSUIT_DRAG = 0.9D;
+	/** In combat, dive directly at the target while outside melee reach. */
+	private static final double COMBAT_PURSUIT_MIN_DISTANCE = 2.5D;
+
+	private GroundPathNavigation groundNav;
+	private FlyingPathNavigation airNav;
+	private boolean flightMode;
+	private boolean combatFlight;
+	private int combatStuckTicks;
+	private Vec3 lastCombatPos = Vec3.ZERO;
+
 	public FlyingHaisistente(EntityType<? extends HaisistenteAbstract> type, Level world) {
 		super(type, world);
-		this.moveControl = new FlyingHaisistenteMoveControl(this);
-		flyowner = new FlyingFollowOwnerGoal(this, 1.2D, (float) 10, (float) 2, true);
-		walkowner = new FollowOwnerGoal(this, 1.2, (float) 10, (float) 2, false);
+		this.moveControl = new MoveControl(this);
+		this.setMaxUpStep(1.0f);
 	}
-	
+
 	@Override
-	protected void defineSynchedData() {
-		super.defineSynchedData();
-		this.entityData.define(FLYING, initFlying());
+	protected PathNavigation createNavigation(Level level) {
+		this.groundNav = new GroundPathNavigation(this, level);
+		return this.groundNav;
 	}
 
-	public boolean initFlying() {
-		return true;
+	public boolean isFlightMode() {
+		return this.flightMode;
 	}
 
-    @Override
+	public void setFlightMode(boolean fly) {
+		if (this.flightMode == fly) {
+			return;
+		}
+		this.flightMode = fly;
+		this.navigation.stop();
+		if (fly) {
+			if (this.airNav == null) {
+				this.airNav = new FlyingPathNavigation(this, level());
+				this.airNav.setCanOpenDoors(false);
+				this.airNav.setCanFloat(true);
+				this.airNav.setCanPassDoors(true);
+			}
+			this.moveControl = new SmoothFlightMoveControl(this);
+			this.navigation = this.airNav;
+		} else {
+			this.setNoGravity(false);
+			this.moveControl = new MoveControl(this);
+			this.navigation = this.groundNav;
+		}
+	}
+
+	/**
+	 * Central walk-vs-fly decision, with hysteresis so the mode does not
+	 * flap: taking off and landing use different thresholds.
+	 */
+	public boolean shouldFly(LivingEntity target, double distance, boolean targetMovingFast, int stuckTicks) {
+		boolean targetAirborne = !target.onGround() && !target.isInWater();
+		boolean bigVerticalGap = Math.abs(target.getY() - this.getY()) > VERTICAL_GAP_FOR_FLIGHT;
+
+		if (this.flightMode) {
+			// Stay airborne while the situation that caused the takeoff lasts
+			return targetAirborne || bigVerticalGap || targetMovingFast || distance > LAND_DISTANCE;
+		}
+		// On foot: only take off when walking genuinely cannot keep up
+		return targetAirborne
+				|| bigVerticalGap
+				|| distance > TAKE_OFF_DISTANCE
+				|| (targetMovingFast && distance > SPRINT_TAKE_OFF_DISTANCE)
+				|| stuckTicks > WALK_STUCK_TICKS_FOR_FLIGHT;
+	}
+
+	/** Flight speed multiplier: calm nearby, fast when closing distance. */
+	public double flightSpeedFactor(double distance) {
+		return Mth.clamp(1.0D + (distance - LAND_DISTANCE) * 0.12D, 1.0D, MAX_FLIGHT_SPEED_FACTOR);
+	}
+
+	/**
+	 * Direct flight: steers velocity straight at the aim point, ignoring path
+	 * nodes. Cruise speed scales down with proximity so it converges on the
+	 * target instead of overshooting and orbiting it. The collision hop in
+	 * {@link SmoothFlightMoveControl} covers terrain clips.
+	 *
+	 * @param aimHeight offset above the target's feet: high for travel so
+	 *                  terrain clips less, low for closing into melee reach
+	 */
+	public void flyDirectlyTowards(LivingEntity target, double aimHeight) {
+		if (!this.getNavigation().isDone()) {
+			this.getNavigation().stop();
+		}
+		Vec3 toAim = target.position().add(0.0D, aimHeight, 0.0D).subtract(this.position());
+		double distance = toAim.length();
+		if (distance < 0.05D) {
+			return;
+		}
+		double cruise = Math.min(PURSUIT_SPEED, distance * 0.25D);
+		double accel = cruise * (1.0D - PURSUIT_DRAG) / PURSUIT_DRAG;
+		Vec3 velocity = this.getDeltaMovement().scale(PURSUIT_DRAG).add(toAim.normalize().scale(accel));
+		this.setDeltaMovement(velocity);
+
+		float yaw = (float) (Mth.atan2(velocity.z, velocity.x) * (180F / (float) Math.PI)) - 90.0F;
+		this.setYRot(yaw);
+		this.yBodyRot = yaw;
+	}
+
+	/** Walk speed multiplier: light jog when the owner pulls ahead. */
+	public double walkSpeedFactor(double distance) {
+		return Mth.clamp(1.0D + (distance - 10.0D) * 0.05D, 1.0D, MAX_WALK_SPEED_FACTOR);
+	}
+
+	@Override
 	protected void registerGoals() {
 		super.registerGoals();
 		this.goalSelector.getAvailableGoals().removeIf(
-    		g -> g.getGoal() instanceof RandomStrollGoal
+			g -> g.getGoal() instanceof FollowOwnerGoal
 		);
-		this.goalSelector.getAvailableGoals().removeIf(
-    		g -> g.getGoal() instanceof FollowOwnerGoal
-		);
-		this.goalSelector.getAvailableGoals().removeIf(
-    		g -> g.getGoal() instanceof HaisistenteAbstract.HaiseSleepOnOwnerGoal
-		);
-		this.goalSelector.addGoal(3, new HaisistenteAbstract.HaiseSleepOnOwnerGoal(this){
-			private boolean lastFly;
-
-			public void start() {
-				lastFly = isFlying();
-				setFlying(false);
-				super.start();
-			}
-
-			public void stop() {
-				setFlying(lastFly);
-				super. stop();
-			}
-		});
-		this.goalSelector.addGoal(7, new FlyingHaisistente.FlyingHaisistenteWanderGoal(this, 0.6D));
-		this.goalSelector.addGoal(7, new RandomStrollGoal(this, 1){
-			public boolean canUse() {
-				return super.canUse() && !isFlying();
-			}
-
-			public boolean canContinueToUse() {
-				return super.canContinueToUse() && !isFlying();
-			}
-		});
+		this.goalSelector.addGoal(6, new FlyingFollowOwnerGoal(this, 1.1D, (float) 10, (float) 2, true));
+		this.goalSelector.addGoal(7, new FlyingHaisistenteWanderGoal(this, 0.6D));
 	}
 
-   	public boolean isFlying() {
-      	return this.entityData.get(FLYING);
-   	}
-
-   	public void setFlying(boolean value) {
-   		if (this.entityData.get(FLYING) == value) return;
-   		this.navigation.stop();
-   		this.entityData.set(FLYING, value);
-   		canSwitchFly = true;
-   	}
-
-   	public void switchFly(boolean value) {
-   		if (value) {
-   			this.goalSelector.removeGoal(walkowner);
-   			this.moveControl = new FlyingHaisistenteMoveControl(this);
-   			this.navigation = (FlyingPathNavigation)createNavigation(level());
-   			flyowner = new FlyingFollowOwnerGoal(this, 1.2, (float) 10, (float) 2, true);
-   			this.goalSelector.addGoal(6, flyowner);
-   		} else {
-   			setNoGravity(false);
-   			this.goalSelector.removeGoal(flyowner);
-   			this.moveControl = new MoveControl(this);
-   			this.navigation = new GroundPathNavigation(this, level());
-   			walkowner = new FollowOwnerGoal(this, 1.2, (float) 10, (float) 2, false);
-   			this.goalSelector.addGoal(6, walkowner);
-   		}
-   	}
-
-   	public void whenTamed() {
-   		canSwitchFly = true;
-   	}
-
-	protected PathNavigation createNavigation(Level level) {
-      	FlyingPathNavigation flyingpathnavigation = new FlyingPathNavigation(this, level);
-     	flyingpathnavigation.setCanOpenDoors(false);
-      	flyingpathnavigation.setCanFloat(true);
-      	flyingpathnavigation.setCanPassDoors(true);
-      	return flyingpathnavigation;
-   	}
-
-   	@Override
-    public void tick() {
-        super.tick();
-    }
-
-    protected void checkFallDamage(double p_29370_, boolean p_29371_, BlockState p_29372_, BlockPos p_29373_) {
-   	}
-   	
-   	public boolean causeFallDamage(float distance, float damageMultiplier) {
-        return false;
-    }
-
-    @Override
-    public void aiStep() {
-    	super.aiStep();
-    	if (canSwitchFly) {
-    		canSwitchFly = false;
-    		switchFly(isFlying());
-    	}
-    	Vec3 vec3 = this.getDeltaMovement();
-      	if (!this.onGround() && vec3.y < 0.0D && navigation.isDone()) {
-      		if (isFlying() && !isOrderedToSit()) this.setDeltaMovement(vec3.multiply(1.0D, 0D, 1.0D));
-      		else this.setDeltaMovement(vec3.multiply(1.0D, 0.7D, 1.0D));
-      	}
-    }
-
-    @Override
-   	public void addAdditionalSaveData(CompoundTag tag) {
-      	super.addAdditionalSaveData(tag);
-      	tag.putBoolean("fly", isFlying());
-   }
-
-    @Override
-	public void readAdditionalSaveData(CompoundTag tag) {
-      	super.readAdditionalSaveData(tag);
-      	this.entityData.set(FLYING, tag.getBoolean("fly"));
-      	switchFly(isFlying());
-   	}
-   
 	@Override
-    public PlayState handleMovementAnimation(AnimationState event) {
-    	 if (!this.onGround()) {
-            return event.setAndContinue(RawAnimation.begin().thenLoop("idlefly"));
-        } 
-    	return super.handleMovementAnimation(event);
-    }
+	public boolean isFlying() {
+		return !this.onGround();
+	}
 
-	static class FlyingHaisistenteMoveControl extends MoveControl {
+	@Override
+	protected void checkFallDamage(double y, boolean onGround, BlockState state, BlockPos pos) {
+	}
 
-    	private final Mob mob;
-    	private final FlyingHaisistente haise;
+	public boolean causeFallDamage(float distance, float damageMultiplier) {
+		return false;
+	}
 
-    	public FlyingHaisistenteMoveControl(Mob mob) {
-        	super(mob);
-        	this.mob = mob;
-        	haise = (FlyingHaisistente)mob;
-    	}
-    	
+	@Override
+	public void aiStep() {
+		super.aiStep();
+		updateCombatFlight();
+		// Glide on idle descents only, so landings are gentle. Never while
+		// navigating or fighting: dives must stay fast.
+		Vec3 delta = this.getDeltaMovement();
+		if (!this.onGround() && delta.y < 0.0D && this.getTarget() == null && this.getNavigation().isDone()) {
+			this.setDeltaMovement(delta.multiply(1.0D, 0.6D, 1.0D));
+		}
+	}
+
+	/**
+	 * Combat goals move the mob but never pick a movement mode, so a ground
+	 * path to an unreachable target leaves it hopping at an edge. While a
+	 * target exists, decide walk-vs-fly here; land again once combat ends.
+	 * Stuck detection is horizontal-only: jumping in place must still count
+	 * as no progress.
+	 */
+	private void updateCombatFlight() {
+		if (this.level().isClientSide()) {
+			return;
+		}
+		LivingEntity target = this.getTarget();
+		if (target == null || !target.isAlive()) {
+			if (this.combatFlight) {
+				this.combatFlight = false;
+				this.setFlightMode(false);
+			}
+			this.combatStuckTicks = 0;
+			return;
+		}
+
+		double dx = this.getX() - this.lastCombatPos.x;
+		double dz = this.getZ() - this.lastCombatPos.z;
+		this.combatStuckTicks = (dx * dx + dz * dz < 0.01D) ? this.combatStuckTicks + 1 : 0;
+		this.lastCombatPos = this.position();
+
+		double distance = this.distanceTo(target);
+		boolean fly = this.shouldFly(target, distance, false, this.combatStuckTicks)
+				|| this.combatStuckTicks > COMBAT_STUCK_TICKS_FOR_FLIGHT;
+		if (fly != this.isFlightMode()) {
+			this.setFlightMode(fly);
+			this.combatFlight = fly;
+		}
+
+		// Airborne chase: dive straight at the target (path nodes orbit
+		// around small fast flyers like bats); melee lands on contact
+		if (fly && distance > COMBAT_PURSUIT_MIN_DISTANCE) {
+			this.flyDirectlyTowards(target, 0.25D);
+		}
+	}
+
+	@Override
+	public PlayState handleMovementAnimation(AnimationState event) {
+		if (!this.onGround() && !this.isInWaterOrBubble()) {
+			return event.setAndContinue(RawAnimation.begin().thenLoop("idlefly"));
+		}
+		return super.handleMovementAnimation(event);
+	}
+
+	/**
+	 * Flight control with believable physics: hovers in place, hops low
+	 * obstacles on contact, and always caps the climb rate LAST so no
+	 * combination of pushes can stack into a runaway ascent.
+	 */
+	static class SmoothFlightMoveControl extends FlyingMoveControl {
+		SmoothFlightMoveControl(Mob mob) {
+			super(mob, 10, true);
+		}
+
 		@Override
 		public void tick() {
-    		if (this.operation != Operation.MOVE_TO) {
-        		mob.setNoGravity(false);
-		        return;
-    		}
-	
-    		mob.setNoGravity(true);
-
-    		double dx = wantedX - mob.getX();
-    		double dy = wantedY - mob.getY();
-    		double dz = wantedZ - mob.getZ();
-
-    		Vec3 dir = new Vec3(dx, dy, dz);
-    		double dist = dir.length();
-
-    		if (dist < 0.25D) {
-        		this.operation = Operation.WAIT;
-        		mob.setDeltaMovement(mob.getDeltaMovement().scale(0.2));
-        		mob.setNoGravity(false);
-        		return;
-    		}
-
-		    Vec3 norm = dir.normalize();
-
-    		norm = new Vec3(
-        		norm.x,
-        		Mth.clamp(norm.y, -0.3D, 0.3D),
-        		norm.z
-    		).normalize();
-
-    		double speed = mob.getAttributeValue(Attributes.FLYING_SPEED);
-
-    		double slowRadius = 1.2D;
-    		double factor = dist < slowRadius
-        		? Mth.clamp(dist / slowRadius, 0.05D, 1.0D)
-        		: 1.0D;
-
-    		mob.setDeltaMovement(mob.getDeltaMovement().scale(0.85D));
-
-    		Vec3 push = norm.scale(speed * 0.15D * factor);
-    		mob.setDeltaMovement(mob.getDeltaMovement().add(push));
-
-    		if (mob.getNavigation().isInProgress()) {
-
-        		Vec3 look = mob.getLookAngle().normalize();
-        		Vec3 start = mob.position().add(0, mob.getBbHeight() * 0.3, 0);
-        		Vec3 end = start.add(look.scale(0.6));
-
-        		HitResult hit = mob.level().clip(new ClipContext(
-            		start,
-            		end,
-            		ClipContext.Block.COLLIDER,
-            		ClipContext.Fluid.NONE,
-            		mob
-        		));
-
-        		boolean frontBlocked = hit.getType() == HitResult.Type.BLOCK;
-        		boolean stuck = mob.horizontalCollision && mob.getDeltaMovement().horizontalDistanceSqr() < 0.005;
-
-        		if (frontBlocked && stuck && !haise.isOrderedToSit()) {
-            		mob.setDeltaMovement(
-                		mob.getDeltaMovement().add(0, 0.08D, 0)
-            		);
-        		}
-    		}
-
-    		mob.setYRot(
-        		rotlerp(
-            		mob.getYRot(),
-            		(float)(Mth.atan2(norm.z, norm.x) * (180F / Math.PI)) - 90F,
-            		10F
-        		)
-    		);
-    		mob.yBodyRot = mob.getYRot();
+			super.tick();
+			if (this.mob.horizontalCollision) {
+				this.mob.setDeltaMovement(this.mob.getDeltaMovement().add(0.0D, OBSTACLE_HOP_BOOST, 0.0D));
+			}
+			Vec3 delta = this.mob.getDeltaMovement();
+			if (delta.y > MAX_CLIMB_SPEED) {
+				this.mob.setDeltaMovement(delta.x, MAX_CLIMB_SPEED, delta.z);
+			}
 		}
 	}
 
 	static class FlyingHaisistenteWanderGoal extends WaterAvoidingRandomFlyingGoal {
+		private final FlyingHaisistente haise;
 		private int stuckTicks;
-		private FlyingHaisistente haise;
-		
-    	public FlyingHaisistenteWanderGoal(PathfinderMob p_186224_, double p_186225_) {
-         	super(p_186224_, p_186225_);
-         	haise = (FlyingHaisistente)p_186224_;
-   		}
 
-   		@Override
-   		public void start() {
-   			stuckTicks = 0;
-   			super.start();
-   		}
+		public FlyingHaisistenteWanderGoal(FlyingHaisistente mob, double speed) {
+			super(mob, speed);
+			this.haise = mob;
+		}
 
-   		public boolean canUse() {
-   			return super.canUse() && haise.isFlying();
-   		}
+		@Override
+		public void start() {
+			stuckTicks = 0;
+			this.haise.setFlightMode(true);
+			super.start();
+		}
 
-   		@Override
-   		public boolean canContinueToUse() {
-   			stuckTicks++;
+		@Override
+		public void stop() {
+			super.stop();
+			this.haise.setFlightMode(false);
+		}
 
+		@Override
+		public boolean canContinueToUse() {
+			stuckTicks++;
 			if (stuckTicks > 100) {
-    			this.mob.getNavigation().stop();
+				this.mob.getNavigation().stop();
 			}
-   			return super.canContinueToUse() && stuckTicks <= 100 && haise.isFlying(); 
-   		}
+			return super.canContinueToUse() && stuckTicks <= 100;
+		}
 
-      	@Nullable
-      	protected Vec3 getPosition() {
-         	Vec3 vec3 = null;
-         	if (this.mob.isInWater()) {
-            	vec3 = LandRandomPos.getPos(this.mob, 15, 15);
-         	}
+		@Nullable
+		protected Vec3 getPosition() {
+			Vec3 vec3 = null;
+			if (this.mob.isInWater()) {
+				vec3 = LandRandomPos.getPos(this.mob, 15, 15);
+			}
 
-         	if (this.mob.getRandom().nextFloat() >= this.probability) {
-            	vec3 = this.getTreePos();
-         	}
+			if (this.mob.getRandom().nextFloat() >= this.probability) {
+				vec3 = this.getTreePos();
+			}
 
-         	return vec3 == null ? super.getPosition() : vec3;
-      	}
+			return vec3 == null ? super.getPosition() : vec3;
+		}
 
-      	@Nullable
-      	private Vec3 getTreePos() {
-         	BlockPos blockpos = this.mob.blockPosition();
-         	BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos();
-         	BlockPos.MutableBlockPos blockpos$mutableblockpos1 = new BlockPos.MutableBlockPos();
+		@Nullable
+		private Vec3 getTreePos() {
+			BlockPos blockpos = this.mob.blockPosition();
+			BlockPos.MutableBlockPos above = new BlockPos.MutableBlockPos();
+			BlockPos.MutableBlockPos below = new BlockPos.MutableBlockPos();
 
-         	for(BlockPos blockpos1 : BlockPos.betweenClosed(Mth.floor(this.mob.getX() - 3.0D), Mth.floor(this.mob.getY() - 6.0D), Mth.floor(this.mob.getZ() - 3.0D), Mth.floor(this.mob.getX() + 3.0D), Mth.floor(this.mob.getY() + 6.0D), Mth.floor(this.mob.getZ() + 3.0D))) {
-            	if (!blockpos.equals(blockpos1)) {
-               		BlockState blockstate = this.mob.level().getBlockState(blockpos$mutableblockpos1.setWithOffset(blockpos1, Direction.DOWN));
-               		boolean flag = blockstate.getBlock() instanceof LeavesBlock || blockstate.is(BlockTags.LOGS);
-               		if (flag && this.mob.level().isEmptyBlock(blockpos1) && this.mob.level().isEmptyBlock(blockpos$mutableblockpos.setWithOffset(blockpos1, Direction.UP))) {
-                  		return Vec3.atBottomCenterOf(blockpos1);
-               		}
-            	}
-         	}
-         return null;
-      	}
-   	}
+			for (BlockPos candidate : BlockPos.betweenClosed(Mth.floor(this.mob.getX() - 3.0D), Mth.floor(this.mob.getY() - 6.0D), Mth.floor(this.mob.getZ() - 3.0D), Mth.floor(this.mob.getX() + 3.0D), Mth.floor(this.mob.getY() + 6.0D), Mth.floor(this.mob.getZ() + 3.0D))) {
+				if (!blockpos.equals(candidate)) {
+					BlockState blockstate = this.mob.level().getBlockState(below.setWithOffset(candidate, Direction.DOWN));
+					boolean isTree = blockstate.getBlock() instanceof LeavesBlock || blockstate.is(BlockTags.LOGS);
+					if (isTree && this.mob.level().isEmptyBlock(candidate) && this.mob.level().isEmptyBlock(above.setWithOffset(candidate, Direction.UP))) {
+						return Vec3.atBottomCenterOf(candidate);
+					}
+				}
+			}
+			return null;
+		}
+	}
 }
